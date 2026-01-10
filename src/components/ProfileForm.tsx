@@ -43,10 +43,10 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave }) => 
   });
 
   const currentAvatarUrl = initialProfile?.foto ? getPublicUrl(initialProfile.foto) : "/placeholder.svg";
+  const actionType = initialProfile ? "Atualizando" : "Cadastrando"; // Define actionType here
 
   const onSubmit = async (values: ProfileFormValues) => {
     setIsSubmitting(true);
-    const actionType = initialProfile ? "Atualizando" : "Cadastrando";
     const loadingToastId = showLoading(`${actionType} perfil...`);
 
     try {
