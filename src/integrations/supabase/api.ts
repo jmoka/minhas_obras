@@ -45,7 +45,7 @@ export const uploadFile = async (file: File, folder: string): Promise<string | n
 };
 
 
-// --- Data Fetching ---
+// --- Data Fetching & Management ---
 
 /**
  * Fetches the artist profile (assuming we only care about the first entry for display).
@@ -64,6 +64,44 @@ export const fetchArtistProfile = async (): Promise<UserProfile | null> => {
   
   return data as UserProfile | null;
 };
+
+/**
+ * Inserts a new artist profile record.
+ */
+export const insertArtistProfile = async (profileData: Omit<UserProfile, 'id' | 'created_at' | 'bloc'>): Promise<UserProfile> => {
+  const { data, error } = await supabase
+    .from("user")
+    .insert([profileData])
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error inserting new artist profile:", error);
+    throw new Error("Failed to save artist profile data.");
+  }
+  
+  return data as UserProfile;
+};
+
+/**
+ * Updates an existing artist profile record.
+ */
+export const updateArtistProfile = async (id: number, profileData: Partial<Omit<UserProfile, 'id' | 'created_at' | 'bloc'>>): Promise<UserProfile> => {
+  const { data, error } = await supabase
+    .from("user")
+    .update(profileData)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error(`Error updating artist profile ${id}:`, error);
+    throw new Error("Failed to update artist profile data.");
+  }
+  
+  return data as UserProfile;
+};
+
 
 /**
  * Fetches all art works (obras).
