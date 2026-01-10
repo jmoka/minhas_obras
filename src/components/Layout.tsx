@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Palette, User, Plus } from "lucide-react";
+import { Palette, User, Plus, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface LayoutProps {
@@ -18,6 +18,10 @@ const NavItem: React.FC<{ to: string; icon: React.ReactNode; label: string }> = 
 );
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
+  // NOTE: In a real app, we would check admin status here to conditionally render the link.
+  // For now, we display it, and the page itself handles the access check.
+  const showAdminLink = true; 
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Header/Navigation */}
@@ -31,6 +35,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <NavItem to="/" icon={<Palette className="h-5 w-5" />} label="Gallery" />
             <NavItem to="/profile" icon={<User className="h-5 w-5" />} label="Profile" />
             <NavItem to="/admin/new-obra" icon={<Plus className="h-5 w-5" />} label="Add Art" />
+            {showAdminLink && (
+              <NavItem to="/admin/users" icon={<Users className="h-5 w-5" />} label="Admin Users" />
+            )}
           </nav>
         </div>
       </header>

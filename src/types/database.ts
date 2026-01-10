@@ -5,6 +5,7 @@ export interface UserProfile {
   descricao: string | null;
   foto: string | null; // UUID for storage reference
   bloc: boolean | null;
+  admin: boolean | null; // Adicionado: Coluna de administrador
 }
 
 export interface Obra {

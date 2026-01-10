@@ -9,6 +9,7 @@ import NotFound from "./pages/NotFound";
 import ObraDetail from "./pages/ObraDetail";
 import AdminNewObra from "./pages/AdminNewObra";
 import ArtistProfilePage from "./pages/ArtistProfilePage";
+import AdminUserManagement from "./pages/AdminUserManagement";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +24,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/obras/:id" element={<ObraDetail />} />
             <Route path="/admin/new-obra" element={<AdminNewObra />} />
+            <Route path="/admin/users" element={<AdminUserManagement />} />
             <Route path="/profile" element={<ArtistProfilePage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
