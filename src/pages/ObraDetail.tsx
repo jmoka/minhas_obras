@@ -1,16 +1,31 @@
-import React from "react";
-import { useParams } from "react-router-dom";
+import React, { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchObraById, getPublicUrl } from "@/integrations/supabase/api";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Video, User, Image } from "lucide-react";
+import { Calendar, Video, User, Image, Mail, Phone, Share2, Edit, Trash2 } from "lucide-react";
 import GalleryManager from "@/components/GalleryManager";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { showSuccess, showError } from "@/utils/toast";
 
 const ObraDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const obraId = id;
+  const navigate = useNavigate();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const { data: obra, isLoading, error } = useQuery({
     queryKey: ["obra", obraId],
@@ -57,6 +72,29 @@ const ObraDetail: React.FC = () => {
   
   // Comparação de IDs como strings (UUID direto)
   const isOwner = currentUser && obra.user_id && currentUser.id === obra.user_id;
+
+  const handleDelete = async () => {
+    try {
+      const { error } = await supabase
+        .from('obras')
+        .delete()
+        .eq('id', obraId);
+      
+      if (error) throw error;
+      
+      showSuccess('Obra deletada com sucesso!');
+      navigate('/');
+    } catch (error) {
+      showError('Erro ao deletar obra');
+      console.error(error);
+    }
+  };
+
+  // Contact message encoding
+  const obraUrl = `${window.location.origin}/obras/${obraId}`;
+  const whatsappMessage = encodeURIComponent(`Olá! Gostaria de saber mais sobre a obra "${obra.titulo}" que está em sua coleção.\n\nVeja a obra: ${obraUrl}`);
+  const emailSubject = encodeURIComponent(`Interesse na obra: ${obra.titulo}`);
+  const emailBody = encodeURIComponent(`Olá!\n\nGostaria de saber mais sobre a obra "${obra.titulo}" que está em sua coleção.\n\nVeja a obra: ${obraUrl}\n\nAguardo retorno.`);
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
@@ -123,6 +161,74 @@ const ObraDetail: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+
+          {(obra.email_dono || obra.telefone_dono) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <Share2 className="h-5 w-5" />
+                  Entrar em Contato
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {obra.email_dono && (
+                  <a href={`mailto:${obra.email_dono}?subject=${emailSubject}&body=${emailBody}`} target="_blank" rel="noopener noreferrer">
+                    <Button variant="outline" className="w-full">
+                      <Mail className="h-4 w-4 mr-2" />
+                      Enviar Email
+                    </Button>
+                  </a>
+                )}
+                {obra.telefone_dono && (
+                  <a href={`https://wa.me/${obra.telefone_dono.replace(/\D/g, '')}?text=${whatsappMessage}`} target="_blank" rel="noopener noreferrer">
+                    <Button variant="outline" className="w-full" style={{backgroundColor: '#25D366', color: 'white'}}>
+                      <Phone className="h-4 w-4 mr-2" />
+                      WhatsApp
+                    </Button>
+                  </a>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {isOwner && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">Gerenciar Obra</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button 
+                  variant="outline" 
+                  className="w-full"
+                  onClick={() => navigate(`/admin/edit-obra/${obraId}`)}
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Editar Obra
+                </Button>
+
+                <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" className="w-full">
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Deletar Obra
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Esta ação não pode ser desfeita. A obra será permanentemente deletada.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDelete}>Deletar</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 

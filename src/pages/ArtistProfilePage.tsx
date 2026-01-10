@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { fetchArtistProfile, getPublicUrl } from "@/integrations/supabase/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -136,6 +137,11 @@ const ArtistProfilePage: React.FC = () => {
                 <span className="text-red-600 text-xs font-bold">❌ IDs NÃO Coincidem!</span>
               )}
             </p>
+            <Link to={`/artist/${currentUser.id}`}>
+              <Button variant="outline" className="w-full mt-4">
+                Ver Minha Página Pública
+              </Button>
+            </Link>
           </CardContent>
         )}
       </Card>

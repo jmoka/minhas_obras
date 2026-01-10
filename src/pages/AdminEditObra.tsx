@@ -1,8 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useNavigate } from "react-router-dom";
 import { CalendarIcon, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,10 +11,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { insertNewObra, uploadFile } from "@/integrations/supabase/api";
+import { uploadFile, fetchObraById, getPublicUrl } from "@/integrations/supabase/api";
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useParams, useNavigate } from "react-router-dom";
 
 // Define the schema for the form
 const formSchema = z.object({
@@ -39,20 +39,38 @@ type ObraFormValues = z.infer<typeof formSchema> & {
   fotoDonoFile?: File;
 };
 
-const AdminNewObra: React.FC = () => {
-  const queryClient = useQueryClient();
+const AdminEditObra: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { data: obra, isLoading } = useQuery({
+    queryKey: ["obra", id],
+    queryFn: () => fetchObraById(id!),
+    enabled: !!id,
+  });
 
   const form = useForm<ObraFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       titulo: "",
       nome_dono: "",
-      telefone_dono: "",
-      email_dono: "",
     },
   });
+
+  // Update form values when obra data is loaded
+  useEffect(() => {
+    if (obra) {
+      form.reset({
+        titulo: obra.titulo || "",
+        data_criacao: obra.data_criacao ? new Date(obra.data_criacao) : undefined,
+        nome_dono: obra.nome_dono || "",
+        telefone_dono: obra.telefone_dono || "",
+        email_dono: obra.email_dono || "",
+      });
+    }
+  }, [obra, form]);
 
   const handleFileUpload = async (file: File | undefined, folder: string): Promise<string | null> => {
     if (!file) return null;
@@ -61,7 +79,7 @@ const AdminNewObra: React.FC = () => {
 
   const onSubmit = async (values: ObraFormValues) => {
     setIsSubmitting(true);
-    const loadingToastId = showLoading("Fazendo upload de arquivos e salvando obra...");
+    const loadingToastId = showLoading("Fazendo upload de arquivos e atualizando obra...");
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -70,47 +88,80 @@ const AdminNewObra: React.FC = () => {
         throw new Error("Usuário não autenticado.");
       }
 
+      // Only upload new files if they were selected
       const [imgPath, videoPath, fotoDonoPath] = await Promise.all([
         handleFileUpload(values.imgFile, "images"),
         handleFileUpload(values.videoFile, "videos"),
         handleFileUpload(values.fotoDonoFile, "owner_photos"),
       ]);
 
-      const newObraData = {
+      const updateData: any = {
         titulo: values.titulo,
         data_criacao: format(values.data_criacao, 'yyyy-MM-dd'),
         nome_dono: values.nome_dono,
         telefone_dono: values.telefone_dono || null,
         email_dono: values.email_dono || null,
-        img: imgPath,
-        video: videoPath,
-        foto_dono: fotoDonoPath,
-        user_id: user.id,
       };
 
-      await insertNewObra(newObraData);
+      // Only update file paths if new files were uploaded
+      if (imgPath) updateData.img = imgPath;
+      if (videoPath) updateData.video = videoPath;
+      if (fotoDonoPath) updateData.foto_dono = fotoDonoPath;
+
+      const { error } = await supabase
+        .from('obras')
+        .update(updateData)
+        .eq('id', id);
+
+      if (error) {
+        throw new Error(`Falha ao atualizar obra: ${error.message}`);
+      }
 
       dismissToast(loadingToastId);
-      showSuccess("Obra de arte cadastrada com sucesso!");
+      showSuccess("Obra atualizada com sucesso!");
       
       queryClient.invalidateQueries({ queryKey: ["obras"] });
+      queryClient.invalidateQueries({ queryKey: ["obra", id] });
       
-      form.reset();
-      navigate("/");
+      navigate(`/obras/${id}`);
     } catch (error) {
       dismissToast(loadingToastId);
-      showError(`Falha ao cadastrar obra: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
+      showError(`Falha ao atualizar obra: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
       console.error(error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="max-w-3xl mx-auto">
+        <Card>
+          <CardContent className="py-8">
+            <p className="text-center text-muted-foreground">Carregando obra...</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!obra) {
+    return (
+      <div className="max-w-3xl mx-auto">
+        <Card>
+          <CardContent className="py-8">
+            <p className="text-center text-destructive">Obra não encontrada.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-3xl mx-auto">
       <Card>
         <CardHeader>
-          <CardTitle className="text-3xl font-serif">Cadastrar Nova Obra</CardTitle>
+          <CardTitle className="text-3xl font-serif">Editar Obra</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -174,6 +225,17 @@ const AdminNewObra: React.FC = () => {
                 render={({ field: { value, onChange, ...fieldProps } }) => (
                   <FormItem>
                     <FormLabel>Imagem da Obra (Opcional)</FormLabel>
+                    {obra.img && (
+                      <div className="mb-2">
+                        <p className="text-sm text-muted-foreground mb-2">Imagem atual:</p>
+                        <img 
+                          src={getPublicUrl(obra.img)} 
+                          alt="Imagem atual da obra" 
+                          className="max-w-xs rounded border"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Selecione uma nova imagem para substituir</p>
+                      </div>
+                    )}
                     <FormControl>
                       <Input
                         {...fieldProps}
@@ -195,6 +257,17 @@ const AdminNewObra: React.FC = () => {
                 render={({ field: { value, onChange, ...fieldProps } }) => (
                   <FormItem>
                     <FormLabel>Vídeo da Obra (Opcional)</FormLabel>
+                    {obra.video && (
+                      <div className="mb-2">
+                        <p className="text-sm text-muted-foreground mb-2">Vídeo atual:</p>
+                        <video 
+                          src={getPublicUrl(obra.video)} 
+                          controls 
+                          className="max-w-xs rounded border"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Selecione um novo vídeo para substituir</p>
+                      </div>
+                    )}
                     <FormControl>
                       <Input
                         {...fieldProps}
@@ -263,6 +336,17 @@ const AdminNewObra: React.FC = () => {
                 render={({ field: { value, onChange, ...fieldProps } }) => (
                   <FormItem>
                     <FormLabel>Foto do Proprietário (Opcional)</FormLabel>
+                    {obra.foto_dono && (
+                      <div className="mb-2">
+                        <p className="text-sm text-muted-foreground mb-2">Foto atual do proprietário:</p>
+                        <img 
+                          src={getPublicUrl(obra.foto_dono)} 
+                          alt="Foto atual do proprietário" 
+                          className="max-w-xs rounded border"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Selecione uma nova foto para substituir</p>
+                      </div>
+                    )}
                     <FormControl>
                       <Input
                         {...fieldProps}
@@ -279,7 +363,7 @@ const AdminNewObra: React.FC = () => {
 
               <Button type="submit" className="w-full" disabled={isSubmitting}>
                 <Upload className="mr-2 h-4 w-4" />
-                {isSubmitting ? "Salvando..." : "Cadastrar Obra"}
+                {isSubmitting ? "Salvando..." : "Atualizar Obra"}
               </Button>
             </form>
           </Form>
@@ -289,4 +373,4 @@ const AdminNewObra: React.FC = () => {
   );
 };
 
-export default AdminNewObra;
+export default AdminEditObra;

@@ -18,6 +18,8 @@ export interface Obra {
   video: string | null; // UUID/path para storage reference
   nome_dono: string | null;
   foto_dono: string | null; // UUID/path para storage reference (corrigido de foto_done)
+  telefone_dono?: string | null;
+  email_dono?: string | null;
 }
 
 export interface Img {
