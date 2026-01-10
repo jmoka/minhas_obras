@@ -3,7 +3,6 @@ import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchObraById, getPublicUrl } from "@/integrations/supabase/api";
 import { supabase } from "@/integrations/supabase/client";
-import { uuidToBigint } from "@/integrations/supabase/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, Video, User, Image } from "lucide-react";
@@ -56,8 +55,8 @@ const ObraDetail: React.FC = () => {
   const ownerPhotoUrl = getPublicUrl(obra.foto_dono);
   const creationDate = obra.data_criacao ? new Date(obra.data_criacao).toLocaleDateString('pt-BR') : 'Data Desconhecida';
   
-  // Comparação de IDs BigInt como strings
-  const isOwner = currentUser && obra.user_id && uuidToBigint(currentUser.id) === obra.user_id;
+  // Comparação de IDs como strings (UUID direto)
+  const isOwner = currentUser && obra.user_id && currentUser.id === obra.user_id;
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">

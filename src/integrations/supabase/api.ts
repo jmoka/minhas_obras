@@ -1,6 +1,5 @@
 import { supabase } from "./client";
 import { Obra, UserProfile, Img, InsertImg } from "@/types/database";
-import { uuidToBigint } from "./utils";
 
 const BUCKET_NAME = "art_gallery";
 
@@ -40,16 +39,13 @@ export const fetchArtistProfile = async (): Promise<UserProfile | null> => {
     return null;
   }
 
-  const userBigintId = uuidToBigint(user.id);
-  
   console.log("🔍 Buscando perfil para:", user.email);
   console.log("  UUID:", user.id);
-  console.log("  ID convertido:", userBigintId);
 
   const { data, error } = await supabase
     .from("user")
     .select("*")
-    .eq("id", userBigintId)
+    .eq("id", user.id)
     .single();
 
   if (error) {
@@ -128,7 +124,7 @@ export const insertNewObra = async (obraData: Omit<Obra, 'id' | 'created_at'>): 
   if (!obraData.user_id) {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      obraData.user_id = uuidToBigint(user.id);
+      obraData.user_id = user.id;
     }
   }
 

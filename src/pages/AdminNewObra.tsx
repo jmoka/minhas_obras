@@ -15,7 +15,6 @@ import { insertNewObra, uploadFile } from "@/integrations/supabase/api";
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { uuidToBigint } from "@/integrations/supabase/utils";
 
 // Define the schema for the form
 const formSchema = z.object({
@@ -76,7 +75,7 @@ const AdminNewObra: React.FC = () => {
         img: imgPath,
         video: videoPath,
         foto_dono: fotoDonoPath,
-        user_id: uuidToBigint(user.id),
+        user_id: user.id,
       };
 
       await insertNewObra(newObraData);

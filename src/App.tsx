@@ -11,6 +11,7 @@ import AdminNewObra from "./pages/AdminNewObra";
 import ArtistProfilePage from "./pages/ArtistProfilePage";
 import AdminUserManagement from "./pages/AdminUserManagement";
 import AuthPage from "./pages/AuthPage";
+import ArtistPublicPage from "./pages/ArtistPublicPage";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/admin/new-obra" element={<AdminNewObra />} />
             <Route path="/admin/users" element={<AdminUserManagement />} />
             <Route path="/profile" element={<ArtistProfilePage />} />
+            <Route path="/artist/:userId" element={<ArtistPublicPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Layout>

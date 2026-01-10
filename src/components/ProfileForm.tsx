@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { UserProfile } from "@/types/database";
-import { insertArtistProfile, updateArtistProfile, uploadFile, getPublicUrl } from "@/integrations/supabase/api";
+import { updateArtistProfile, uploadFile, getPublicUrl } from "@/integrations/supabase/api";
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 // Define the schema for the form
 const formSchema = z.object({
@@ -45,19 +46,20 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave }) => 
   const currentAvatarUrl = initialProfile?.foto ? getPublicUrl(initialProfile.foto) : "/placeholder.svg";
 
   const onSubmit = async (values: ProfileFormValues) => {
-    if (!initialProfile) {
-      showError("Perfil não encontrado. Faça login novamente.");
-      return;
-    }
-
     setIsSubmitting(true);
-    const loadingToastId = showLoading("Atualizando perfil...");
+    const isCreating = !initialProfile;
+    const loadingToastId = showLoading(isCreating ? "Criando perfil..." : "Atualizando perfil...");
 
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error("Usuário não autenticado. Faça login novamente.");
+      }
+
       let fotoPath = initialProfile?.foto || null;
 
       if (values.newFotoFile) {
-        // O upload do arquivo deve funcionar agora que o bucket foi corrigido
         fotoPath = await uploadFile(values.newFotoFile, "avatars");
       }
 
@@ -67,18 +69,34 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave }) => 
         foto: fotoPath,
       };
 
-      // initialProfile.id é agora uma string, garantindo precisão
-      await updateArtistProfile(initialProfile.id, profileData);
+      if (isCreating) {
+        const { error } = await supabase
+          .from("user")
+          .insert([{
+            id: user.id,
+            nome: values.nome,
+            descricao: values.descricao || null,
+            foto: fotoPath,
+            admin: false,
+            bloc: false,
+          }]);
+        
+        if (error) {
+          throw new Error(`Falha ao criar perfil: ${error.message}`);
+        }
+      } else {
+        await updateArtistProfile(initialProfile.id, profileData);
+      }
 
       dismissToast(loadingToastId);
-      showSuccess("Perfil atualizado com sucesso!");
+      showSuccess(isCreating ? "Perfil criado com sucesso!" : "Perfil atualizado com sucesso!");
       
       queryClient.invalidateQueries({ queryKey: ["artistProfile"] });
       
       onSave();
     } catch (error) {
       dismissToast(loadingToastId);
-      showError("Falha ao salvar perfil. Verifique o console para detalhes.");
+      showError(error instanceof Error ? error.message : "Falha ao salvar perfil.");
       console.error(error);
     } finally {
       setIsSubmitting(false);

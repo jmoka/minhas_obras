@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { showSuccess } from "@/utils/toast";
+import { useQuery } from "@tanstack/react-query";
+import { fetchArtistProfile } from "@/integrations/supabase/api";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -44,6 +46,24 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     showSuccess("Logout realizado com sucesso!");
     navigate("/");
   }; 
+
+  const { data: profile } = useQuery({
+    queryKey: ["artistProfile"],
+    queryFn: fetchArtistProfile,
+    enabled: isAuthenticated,
+  });
+
+  if (isAuthenticated && profile?.bloc) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="max-w-md p-6 text-center space-y-4 border rounded-lg">
+          <h1 className="text-xl font-semibold">Conta bloqueada</h1>
+          <p>Sua conta está bloqueada. Entre em contato com o administrador.</p>
+          <Button onClick={handleLogout}>Sair</Button>
+        </div>
+      </div>
+    );
+  } 
 
   return (
     <div className="min-h-screen flex flex-col bg-background">

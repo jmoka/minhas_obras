@@ -7,7 +7,6 @@ import { User, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ProfileForm from "@/components/ProfileForm";
 import { supabase } from "@/integrations/supabase/client";
-import { uuidToBigint } from "@/integrations/supabase/utils";
 
 const ArtistProfilePage: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
@@ -130,9 +129,8 @@ const ArtistProfilePage: React.FC = () => {
             <h3 className="text-lg font-semibold mt-4 mb-2 text-muted-foreground">Debug IDs (Para Diagnóstico)</h3>
             <p className="text-sm">
               <span className="font-mono text-xs block">Auth UUID: {currentUser.id}</span>
-              <span className="font-mono text-xs block">Converted BIGINT: {uuidToBigint(currentUser.id)}</span>
               <span className="font-mono text-xs block">Profile ID (DB): {profile.id}</span>
-              {uuidToBigint(currentUser.id) === profile.id ? (
+              {currentUser.id === profile.id ? (
                 <span className="text-green-600 text-xs font-bold">✅ IDs Coincidem</span>
               ) : (
                 <span className="text-red-600 text-xs font-bold">❌ IDs NÃO Coincidem!</span>
