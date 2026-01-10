@@ -77,6 +77,9 @@ export const insertArtistProfile = async (profileData: Omit<UserProfile, 'id' | 
 };
 
 export const updateArtistProfile = async (id: string, profileData: Partial<Omit<UserProfile, 'id' | 'created_at' | 'bloc' | 'admin'>>): Promise<UserProfile> => {
+  console.log("Attempting to update profile with ID:", id);
+  console.log("Payload:", profileData);
+  
   const { data, error } = await supabase
     .from("user")
     .update(profileData)
