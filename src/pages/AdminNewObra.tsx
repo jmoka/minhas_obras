@@ -14,6 +14,8 @@ import { format } from "date-fns";
 import { insertNewObra, uploadFile } from "@/integrations/supabase/api";
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { uuidToBigint } from "@/integrations/supabase/utils";
 
 // Define the schema for the form
 const formSchema = z.object({
@@ -55,14 +57,18 @@ const AdminNewObra: React.FC = () => {
     const loadingToastId = showLoading("Fazendo upload de arquivos e salvando obra...");
 
     try {
-      // 1. Upload files
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        throw new Error("Usuário não autenticado.");
+      }
+
       const [imgPath, videoPath, fotoDonoPath] = await Promise.all([
         handleFileUpload(values.imgFile, "images"),
         handleFileUpload(values.videoFile, "videos"),
         handleFileUpload(values.fotoDonoFile, "owner_photos"),
       ]);
 
-      // 2. Prepare data for DB insertion
       const newObraData = {
         titulo: values.titulo,
         data_criacao: format(values.data_criacao, 'yyyy-MM-dd'),
@@ -70,22 +76,20 @@ const AdminNewObra: React.FC = () => {
         img: imgPath,
         video: videoPath,
         foto_dono: fotoDonoPath,
-        user_id: null, // Assuming user_id is not required for this basic admin form
+        user_id: uuidToBigint(user.id),
       };
 
-      // 3. Insert into database
       await insertNewObra(newObraData);
 
       dismissToast(loadingToastId);
       showSuccess("Obra de arte cadastrada com sucesso!");
       
-      // Invalidate query cache to refresh gallery view
       queryClient.invalidateQueries({ queryKey: ["obras"] });
       
       form.reset();
     } catch (error) {
       dismissToast(loadingToastId);
-      showError("Falha ao cadastrar obra. Verifique o console para detalhes.");
+      showError(`Falha ao cadastrar obra: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
       console.error(error);
     } finally {
       setIsSubmitting(false);

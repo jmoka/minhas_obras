@@ -44,7 +44,6 @@ serve(async (req) => {
       }
     );
 
-    // Get the current user's session/claims
     const { data: { user: currentUser }, error: userError } = await supabaseAnon.auth.getUser();
 
     if (userError || !currentUser) {
@@ -55,7 +54,6 @@ serve(async (req) => {
       });
     }
 
-    // 2. Check if the current user is an admin
     const { data: profile, error: profileError } = await supabaseAnon
       .from("user")
       .select("admin")
@@ -96,7 +94,10 @@ serve(async (req) => {
 
     console.log(`[${functionName}] Successfully created new user: ${newUser.user?.id}`);
     
-    return new Response(JSON.stringify({ message: "User created successfully", userId: newUser.user?.id }), {
+    return new Response(JSON.stringify({ 
+      message: "User created successfully", 
+      userId: newUser.user?.id 
+    }), {
       status: 201,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

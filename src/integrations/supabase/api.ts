@@ -1,29 +1,15 @@
 import { supabase } from "./client";
-import { Obra, UserProfile } from "@/types/database";
+import { Obra, UserProfile, Img, InsertImg } from "@/types/database";
+import { uuidToBigint } from "./utils";
 
 const BUCKET_NAME = "art_gallery";
 
-// --- Storage Utilities ---
-
-/**
- * Gets the public URL for a file stored in Supabase Storage.
- * @param path The path/UUID of the file in the storage bucket.
- * @returns The public URL string.
- */
 export const getPublicUrl = (path: string | null): string => {
-  if (!path) return "/placeholder.svg"; // Use a fallback placeholder
-  
-  // Supabase storage paths are usually relative to the bucket root.
+  if (!path) return "/placeholder.svg";
   const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(path);
   return data.publicUrl;
 };
 
-/**
- * Uploads a file to Supabase Storage and returns the file path (UUID).
- * @param file The file object to upload.
- * @param folder The subfolder in the bucket (e.g., 'images', 'videos', 'avatars').
- * @returns The path of the uploaded file (which is often the UUID).
- */
 export const uploadFile = async (file: File, folder: string): Promise<string | null> => {
   if (!file) return null;
   
@@ -43,36 +29,39 @@ export const uploadFile = async (file: File, folder: string): Promise<string | n
     throw new Error(`Falha ao fazer upload do arquivo: ${error.message}`);
   }
 
-  // We return the path used for storage, which is what we save in the DB.
   return filePath;
 };
 
-
-// --- Data Fetching & Management ---
-
-/**
- * Fetches the artist profile (assuming we only care about the first entry for display).
- */
 export const fetchArtistProfile = async (): Promise<UserProfile | null> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    console.log("❌ Nenhum usuário autenticado");
+    return null;
+  }
+
+  const userBigintId = uuidToBigint(user.id);
+  
+  console.log("🔍 Buscando perfil para:", user.email);
+  console.log("  UUID:", user.id);
+  console.log("  ID convertido:", userBigintId);
+
   const { data, error } = await supabase
     .from("user")
     .select("*")
-    .limit(1)
+    .eq("id", userBigintId)
     .single();
 
-  if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
-    console.error("Error fetching artist profile:", error);
+  if (error) {
+    console.error("❌ Erro ao buscar perfil:", error);
     return null;
   }
   
+  console.log("✅ Perfil encontrado:", data);
   return data as UserProfile | null;
 };
 
-/**
- * Inserts a new artist profile record.
- */
 export const insertArtistProfile = async (profileData: Omit<UserProfile, 'id' | 'created_at' | 'bloc' | 'admin'>): Promise<UserProfile> => {
-  // Note: We rely on the database to generate the 'id' (now set to serial)
   const { data, error } = await supabase
     .from("user")
     .insert([profileData])
@@ -87,10 +76,7 @@ export const insertArtistProfile = async (profileData: Omit<UserProfile, 'id' | 
   return data as UserProfile;
 };
 
-/**
- * Updates an existing artist profile record.
- */
-export const updateArtistProfile = async (id: number, profileData: Partial<Omit<UserProfile, 'id' | 'created_at' | 'bloc' | 'admin'>>): Promise<UserProfile> => {
+export const updateArtistProfile = async (id: string, profileData: Partial<Omit<UserProfile, 'id' | 'created_at' | 'bloc' | 'admin'>>): Promise<UserProfile> => {
   const { data, error } = await supabase
     .from("user")
     .update(profileData)
@@ -106,10 +92,6 @@ export const updateArtistProfile = async (id: number, profileData: Partial<Omit<
   return data as UserProfile;
 };
 
-
-/**
- * Fetches all art works (obras).
- */
 export const fetchObras = async (): Promise<Obra[]> => {
   const { data, error } = await supabase
     .from("obras")
@@ -124,10 +106,7 @@ export const fetchObras = async (): Promise<Obra[]> => {
   return data as Obra[];
 };
 
-/**
- * Fetches a single art work by ID.
- */
-export const fetchObraById = async (id: number): Promise<Obra | null> => {
+export const fetchObraById = async (id: string): Promise<Obra | null> => {
   const { data, error } = await supabase
     .from("obras")
     .select("*")
@@ -142,10 +121,14 @@ export const fetchObraById = async (id: number): Promise<Obra | null> => {
   return data as Obra;
 };
 
-/**
- * Inserts a new art work record.
- */
 export const insertNewObra = async (obraData: Omit<Obra, 'id' | 'created_at'>): Promise<Obra | null> => {
+  if (!obraData.user_id) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      obraData.user_id = uuidToBigint(user.id);
+    }
+  }
+
   const { data, error } = await supabase
     .from("obras")
     .insert([obraData])
@@ -158,4 +141,67 @@ export const insertNewObra = async (obraData: Omit<Obra, 'id' | 'created_at'>): 
   }
   
   return data as Obra;
+};
+
+export const fetchGalleryImagesByObraId = async (obraId: string): Promise<Img[]> => {
+  const { data, error } = await supabase
+    .from("imgs")
+    .select("*")
+    .eq("obras_id", obraId)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error(`Error fetching gallery images for obra ${obraId}:`, error);
+    return [];
+  }
+  
+  return data as Img[];
+};
+
+export const insertGalleryImage = async (imageData: InsertImg): Promise<Img> => {
+  const { data, error } = await supabase
+    .from("imgs")
+    .insert([imageData])
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error inserting gallery image:", error);
+    throw new Error(`Falha ao salvar imagem na galeria: ${error.message}`);
+  }
+  
+  return data as Img;
+};
+
+export const uploadAndAddToGallery = async (file: File, obraId: string): Promise<Img> => {
+  const filePath = await uploadFile(file, "gallery");
+  
+  if (!filePath) {
+    throw new Error("Falha ao fazer upload da imagem.");
+  }
+
+  return insertGalleryImage({
+    obras_id: obraId,
+    url: filePath,
+  });
+};
+
+export const deleteGalleryImage = async (imageId: string, imagePath: string): Promise<void> => {
+  const { error: storageError } = await supabase.storage
+    .from(BUCKET_NAME)
+    .remove([imagePath]);
+
+  if (storageError) {
+    console.warn("Error deleting file from storage:", storageError);
+  }
+
+  const { error: dbError } = await supabase
+    .from("imgs")
+    .delete()
+    .eq("id", imageId);
+
+  if (dbError) {
+    console.error(`Error deleting gallery image ${imageId}:`, dbError);
+    throw new Error(`Falha ao deletar imagem da galeria: ${dbError.message}`);
+  }
 };

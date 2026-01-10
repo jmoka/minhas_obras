@@ -2,23 +2,34 @@ import React from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchObraById, getPublicUrl } from "@/integrations/supabase/api";
+import { supabase } from "@/integrations/supabase/client";
+import { uuidToBigint } from "@/integrations/supabase/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, Video, User, Image } from "lucide-react";
+import GalleryManager from "@/components/GalleryManager";
 
 const ObraDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const obraId = id ? parseInt(id) : undefined;
+  const obraId = id;
 
   const { data: obra, isLoading, error } = useQuery({
     queryKey: ["obra", obraId],
     queryFn: () => {
-      if (obraId === undefined || isNaN(obraId)) {
+      if (!obraId) {
         throw new Error("Invalid artwork ID.");
       }
       return fetchObraById(obraId);
     },
-    enabled: obraId !== undefined && !isNaN(obraId),
+    enabled: !!obraId,
+  });
+
+  const { data: currentUser } = useQuery({
+    queryKey: ["currentUser"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      return user;
+    },
   });
 
   if (isLoading) {
@@ -44,6 +55,9 @@ const ObraDetail: React.FC = () => {
   const videoUrl = obra.video ? getPublicUrl(obra.video) : null;
   const ownerPhotoUrl = getPublicUrl(obra.foto_dono);
   const creationDate = obra.data_criacao ? new Date(obra.data_criacao).toLocaleDateString('pt-BR') : 'Data Desconhecida';
+  
+  // Comparação de IDs BigInt como strings
+  const isOwner = currentUser && obra.user_id && uuidToBigint(currentUser.id) === obra.user_id;
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
@@ -112,6 +126,8 @@ const ObraDetail: React.FC = () => {
           </Card>
         </div>
       </div>
+
+      {obraId && <GalleryManager obraId={obraId} isOwner={!!isOwner} />}
     </div>
   );
 };

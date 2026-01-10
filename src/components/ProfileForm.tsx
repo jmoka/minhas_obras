@@ -43,42 +43,39 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave }) => 
   });
 
   const currentAvatarUrl = initialProfile?.foto ? getPublicUrl(initialProfile.foto) : "/placeholder.svg";
-  const actionType = initialProfile ? "Atualizando" : "Cadastrando"; // Define actionType here
 
   const onSubmit = async (values: ProfileFormValues) => {
+    if (!initialProfile) {
+      showError("Perfil não encontrado. Faça login novamente.");
+      return;
+    }
+
     setIsSubmitting(true);
-    const loadingToastId = showLoading(`${actionType} perfil...`);
+    const loadingToastId = showLoading("Atualizando perfil...");
 
     try {
       let fotoPath = initialProfile?.foto || null;
 
-      // 1. Handle Avatar Upload if a new file is selected
       if (values.newFotoFile) {
+        // O upload do arquivo deve funcionar agora que o bucket foi corrigido
         fotoPath = await uploadFile(values.newFotoFile, "avatars");
       }
 
-      // 2. Prepare data for DB insertion/update
       const profileData = {
         nome: values.nome,
         descricao: values.descricao || null,
         foto: fotoPath,
       };
 
-      if (initialProfile) {
-        // Update existing profile
-        await updateArtistProfile(initialProfile.id, profileData);
-      } else {
-        // Insert new profile
-        await insertArtistProfile(profileData);
-      }
+      // initialProfile.id é agora uma string, garantindo precisão
+      await updateArtistProfile(initialProfile.id, profileData);
 
       dismissToast(loadingToastId);
-      showSuccess(`Perfil ${initialProfile ? 'atualizado' : 'cadastrado'} com sucesso!`);
+      showSuccess("Perfil atualizado com sucesso!");
       
-      // Invalidate query cache to refresh profile view
       queryClient.invalidateQueries({ queryKey: ["artistProfile"] });
       
-      onSave(); // Exit edit mode
+      onSave();
     } catch (error) {
       dismissToast(loadingToastId);
       showError("Falha ao salvar perfil. Verifique o console para detalhes.");
@@ -164,7 +161,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave }) => 
 
         <Button type="submit" className="w-full" disabled={isSubmitting}>
           <Save className="mr-2 h-4 w-4" />
-          {isSubmitting ? `${actionType}...` : `${actionType} Perfil`}
+          {isSubmitting ? "Salvando..." : "Salvar Perfil"}
         </Button>
       </form>
     </Form>

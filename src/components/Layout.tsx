@@ -1,7 +1,10 @@
-import React from "react";
-import { Link } from "react-router-dom";
-import { Palette, User, Plus, Users } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Palette, User, Plus, Users, LogIn, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { showSuccess } from "@/utils/toast";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -18,9 +21,29 @@ const NavItem: React.FC<{ to: string; icon: React.ReactNode; label: string }> = 
 );
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  // NOTE: In a real app, we would check admin status here to conditionally render the link.
-  // For now, we display it, and the page itself handles the access check.
-  const showAdminLink = true; 
+  const navigate = useNavigate();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const showAdminLink = true;
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    showSuccess("Logout realizado com sucesso!");
+    navigate("/");
+  }; 
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -31,12 +54,28 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <Palette className="mr-2 h-6 w-6" />
             Art Gallery
           </Link>
-          <nav className="flex space-x-4">
+          <nav className="flex space-x-4 items-center">
             <NavItem to="/" icon={<Palette className="h-5 w-5" />} label="Gallery" />
-            <NavItem to="/profile" icon={<User className="h-5 w-5" />} label="Profile" />
-            <NavItem to="/admin/new-obra" icon={<Plus className="h-5 w-5" />} label="Add Art" />
-            {showAdminLink && (
-              <NavItem to="/admin/users" icon={<Users className="h-5 w-5" />} label="Admin Users" />
+            {isAuthenticated && (
+              <>
+                <NavItem to="/profile" icon={<User className="h-5 w-5" />} label="Profile" />
+                <NavItem to="/admin/new-obra" icon={<Plus className="h-5 w-5" />} label="Add Art" />
+                {showAdminLink && (
+                  <NavItem to="/admin/users" icon={<Users className="h-5 w-5" />} label="Admin Users" />
+                )}
+                <Button variant="ghost" size="sm" onClick={handleLogout}>
+                  <LogOut className="h-5 w-5 mr-2" />
+                  <span className="hidden sm:inline">Sair</span>
+                </Button>
+              </>
+            )}
+            {!isAuthenticated && (
+              <Link to="/auth">
+                <Button variant="ghost" size="sm">
+                  <LogIn className="h-5 w-5 mr-2" />
+                  <span className="hidden sm:inline">Entrar</span>
+                </Button>
+              </Link>
             )}
           </nav>
         </div>
