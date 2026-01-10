@@ -6,6 +6,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { User, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ProfileForm from "@/components/ProfileForm";
+import { supabase } from "@/integrations/supabase/client";
+import { uuidToBigint } from "@/integrations/supabase/utils";
 
 const ArtistProfilePage: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
@@ -13,6 +15,15 @@ const ArtistProfilePage: React.FC = () => {
   const { data: profile, isLoading, error } = useQuery({
     queryKey: ["artistProfile"],
     queryFn: fetchArtistProfile,
+  });
+
+  // Fetch current auth user for UUID access
+  const { data: currentUser } = useQuery({
+    queryKey: ["currentUser"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      return user;
+    },
   });
 
   const handleEditToggle = () => {
@@ -112,6 +123,23 @@ const ArtistProfilePage: React.FC = () => {
             </p>
           </section>
         </CardContent>
+        
+        {/* DEBUG SECTION */}
+        {currentUser && profile && (
+          <CardContent className="pt-0 border-t mt-6">
+            <h3 className="text-lg font-semibold mt-4 mb-2 text-muted-foreground">Debug IDs (Para Diagnóstico)</h3>
+            <p className="text-sm">
+              <span className="font-mono text-xs block">Auth UUID: {currentUser.id}</span>
+              <span className="font-mono text-xs block">Converted BIGINT: {uuidToBigint(currentUser.id)}</span>
+              <span className="font-mono text-xs block">Profile ID (DB): {profile.id}</span>
+              {uuidToBigint(currentUser.id) === profile.id ? (
+                <span className="text-green-600 text-xs font-bold">✅ IDs Coincidem</span>
+              ) : (
+                <span className="text-red-600 text-xs font-bold">❌ IDs NÃO Coincidem!</span>
+              )}
+            </p>
+          </CardContent>
+        )}
       </Card>
     </div>
   );
