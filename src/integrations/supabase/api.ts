@@ -33,11 +33,14 @@ export const uploadFile = async (file: File, folder: string): Promise<string | n
 
   const { error } = await supabase.storage
     .from(BUCKET_NAME)
-    .upload(filePath, file);
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false,
+    });
 
   if (error) {
     console.error("Error uploading file:", error);
-    throw new Error("Failed to upload file.");
+    throw new Error(`Falha ao fazer upload do arquivo: ${error.message}`);
   }
 
   // We return the path used for storage, which is what we save in the DB.
@@ -68,7 +71,8 @@ export const fetchArtistProfile = async (): Promise<UserProfile | null> => {
 /**
  * Inserts a new artist profile record.
  */
-export const insertArtistProfile = async (profileData: Omit<UserProfile, 'id' | 'created_at' | 'bloc'>): Promise<UserProfile> => {
+export const insertArtistProfile = async (profileData: Omit<UserProfile, 'id' | 'created_at' | 'bloc' | 'admin'>): Promise<UserProfile> => {
+  // Note: We rely on the database to generate the 'id' (now set to serial)
   const { data, error } = await supabase
     .from("user")
     .insert([profileData])
@@ -77,7 +81,7 @@ export const insertArtistProfile = async (profileData: Omit<UserProfile, 'id' | 
 
   if (error) {
     console.error("Error inserting new artist profile:", error);
-    throw new Error("Failed to save artist profile data.");
+    throw new Error(`Falha ao salvar perfil: ${error.message}`);
   }
   
   return data as UserProfile;
@@ -86,7 +90,7 @@ export const insertArtistProfile = async (profileData: Omit<UserProfile, 'id' | 
 /**
  * Updates an existing artist profile record.
  */
-export const updateArtistProfile = async (id: number, profileData: Partial<Omit<UserProfile, 'id' | 'created_at' | 'bloc'>>): Promise<UserProfile> => {
+export const updateArtistProfile = async (id: number, profileData: Partial<Omit<UserProfile, 'id' | 'created_at' | 'bloc' | 'admin'>>): Promise<UserProfile> => {
   const { data, error } = await supabase
     .from("user")
     .update(profileData)
@@ -96,7 +100,7 @@ export const updateArtistProfile = async (id: number, profileData: Partial<Omit<
 
   if (error) {
     console.error(`Error updating artist profile ${id}:`, error);
-    throw new Error("Failed to update artist profile data.");
+    throw new Error(`Falha ao atualizar perfil: ${error.message}`);
   }
   
   return data as UserProfile;
@@ -150,7 +154,7 @@ export const insertNewObra = async (obraData: Omit<Obra, 'id' | 'created_at'>): 
 
   if (error) {
     console.error("Error inserting new obra:", error);
-    throw new Error("Failed to save artwork data.");
+    throw new Error(`Falha ao salvar dados da obra: ${error.message}`);
   }
   
   return data as Obra;
