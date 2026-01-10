@@ -11,4 +11,3 @@ export const uuidToBigint = (uuid: string): string => {
   // Retornar como string para evitar perda de precisão
   return bigIntValue.toString();
 };
-
