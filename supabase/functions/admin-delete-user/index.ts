@@ -103,27 +103,13 @@ serve(async (req) => {
 
     console.log(`[${functionName}] Admin user ${currentUser.id} is deleting user ${userId}.`);
 
-    // 5. Delete from user table first (cascade will handle related data)
-    const { error: deleteTableError } = await supabaseAnon
-      .from("user")
-      .delete()
-      .eq("id", userId);
-
-    if (deleteTableError) {
-      console.error(`[${functionName}] Error deleting from user table:`, deleteTableError.message);
-      return new Response(JSON.stringify({ error: `Falha ao deletar usuário: ${deleteTableError.message}` }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // 6. Initialize Supabase client with Service Role Key for auth deletion
+    // 5. Initialize Supabase client with Service Role Key for auth deletion
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // 7. Delete from auth.users
+    // 6. Delete from auth.users. The ON DELETE CASCADE will handle deleting from the 'user' table.
     const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
     if (deleteAuthError) {
