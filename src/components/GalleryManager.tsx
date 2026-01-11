@@ -71,20 +71,21 @@ const GalleryManager: React.FC<GalleryManagerProps> = ({ obraId, isOwner }) => {
 
   return (
     <div className="space-y-6">
-      <h3 className="text-2xl font-semibold">Galeria de Imagens</h3>
+      <h3 className="text-xl md:text-2xl font-semibold text-teal-800 border-b-2 border-amber-200 inline-block pb-1">Galeria de Imagens</h3>
 
       {isOwner && (
-        <Card className="p-4">
+        <Card className="p-4 bg-white/80 backdrop-blur-sm border-none shadow-md rounded-2xl">
           <div className="flex items-center space-x-4">
             <Input
               type="file"
               accept="image/*"
               onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-              className="flex-grow"
+              className="flex-grow border-stone-200 focus:border-teal-500 focus:ring-teal-500 file:text-teal-700 file:bg-teal-50 hover:file:bg-teal-100"
             />
             <Button 
               onClick={handleUpload} 
               disabled={!selectedFile || addImageMutation.isPending}
+              className="bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white border-none shadow-sm"
             >
               {addImageMutation.isPending ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -98,17 +99,17 @@ const GalleryManager: React.FC<GalleryManagerProps> = ({ obraId, isOwner }) => {
       )}
 
       {galleryImages && galleryImages.length > 0 ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {galleryImages.map((img) => (
-            <Card key={img.id} className="relative group overflow-hidden">
+            <Card key={img.id} className="relative group overflow-hidden rounded-xl border-none shadow-lg hover:shadow-xl transition-shadow duration-300">
               <img
                 src={getPublicUrl(img.url)}
                 alt={`Galeria ${img.id}`}
-                className="w-full h-48 object-cover"
+                className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
               />
               
               {isOwner && (
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <div className="absolute inset-0 bg-teal-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
                   <Button
                     variant="destructive"
                     size="sm"

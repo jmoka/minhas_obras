@@ -112,7 +112,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave }) => 
             <img
               src={currentAvatarUrl}
               alt="Current Avatar"
-              className="w-24 h-24 rounded-full object-cover border-2 border-primary"
+              className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg ring-2 ring-teal-500/50"
             />
             {/* Simple overlay for visual feedback */}
             <div className="absolute inset-0 rounded-full bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
@@ -126,14 +126,14 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave }) => 
             name="newFotoFile"
             render={({ field: { value, onChange, ...fieldProps } }) => (
               <FormItem className="flex-grow">
-                <FormLabel>Nova Foto de Perfil (Opcional)</FormLabel>
+                <FormLabel className="text-teal-800 font-medium">Nova Foto de Perfil (Opcional)</FormLabel>
                 <FormControl>
                   <Input
                     {...fieldProps}
                     type="file"
                     accept="image/*"
                     onChange={(event) => onChange(event.target.files ? event.target.files[0] : undefined)}
-                    className="file:text-primary file:bg-secondary hover:file:bg-secondary/80"
+                    className="file:text-teal-700 file:bg-teal-50 hover:file:bg-teal-100 border-stone-200 focus:border-teal-500 focus:ring-teal-500"
                   />
                 </FormControl>
                 <FormMessage />
@@ -148,9 +148,9 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave }) => 
           name="nome"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nome do Artista</FormLabel>
+              <FormLabel className="text-teal-800 font-medium">Nome do Artista</FormLabel>
               <FormControl>
-                <Input placeholder="Seu nome ou nome artístico" {...field} />
+                <Input placeholder="Seu nome ou nome artístico" {...field} className="border-stone-200 focus:border-teal-500 focus:ring-teal-500" />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -163,11 +163,11 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave }) => 
           name="descricao"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Biografia / Descrição</FormLabel>
+              <FormLabel className="text-teal-800 font-medium">Biografia / Descrição</FormLabel>
               <FormControl>
                 <Textarea 
                   placeholder="Conte um pouco sobre você e sua arte..." 
-                  className="resize-none min-h-[150px]"
+                  className="resize-none min-h-[150px] border-stone-200 focus:border-teal-500 focus:ring-teal-500"
                   {...field} 
                   value={field.value || ""} // Ensure controlled component handles null/undefined
                 />
@@ -177,7 +177,7 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave }) => 
           )}
         />
 
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
+        <Button type="submit" className="w-full bg-gradient-to-r from-teal-600 via-yellow-500 to-amber-600 hover:opacity-90 text-white border-none shadow-md transition-all" disabled={isSubmitting}>
           <Save className="mr-2 h-4 w-4" />
           {isSubmitting ? "Salvando..." : "Salvar Perfil"}
         </Button>

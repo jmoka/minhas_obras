@@ -12,6 +12,7 @@ import { adminCreateUser } from "@/integrations/supabase/functions";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { fetchArtistProfile } from "@/integrations/supabase/api";
+import AllUsersList from "@/components/AllUsersList";
 
 // Define the schema for the form
 const formSchema = z.object({
@@ -86,73 +87,77 @@ const AdminUserManagement: React.FC = () => {
   }
 
   return (
-    <div className="max-w-xl mx-auto">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-3xl font-serif">Gerenciamento de Usuários</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <h2 className="text-xl font-semibold mb-4">Criar Novo Usuário</h2>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              
-              {/* Nome */}
-              <FormField
-                control={form.control}
-                name="nome"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nome do Novo Usuário</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Nome Completo" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+    <div className="container mx-auto space-y-12">
+      <div className="max-w-xl mx-auto">
+        <Card className="border-none shadow-lg bg-white/90 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="text-3xl font-serif text-teal-800">Gerenciamento de Usuários</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <h2 className="text-xl font-semibold mb-4 text-stone-700">Criar Novo Usuário</h2>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                
+                {/* Nome */}
+                <FormField
+                  control={form.control}
+                  name="nome"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome do Novo Usuário</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Nome Completo" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              {/* Email */}
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="email@exemplo.com" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                {/* Email */}
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input placeholder="email@exemplo.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              {/* Password */}
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Senha</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="Mínimo 6 caracteres" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                {/* Password */}
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Senha</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="Mínimo 6 caracteres" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <UserPlus className="mr-2 h-4 w-4" />
-                )}
-                Criar Usuário
-              </Button>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+                <Button type="submit" className="w-full bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white border-none" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <UserPlus className="mr-2 h-4 w-4" />
+                  )}
+                  Criar Usuário
+                </Button>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      </div>
+
+      <AllUsersList />
     </div>
   );
 };

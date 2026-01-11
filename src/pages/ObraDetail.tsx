@@ -97,18 +97,18 @@ const ObraDetail: React.FC = () => {
   const emailBody = encodeURIComponent(`Olá!\n\nGostaria de saber mais sobre a obra "${obra.titulo}" que está em sua coleção.\n\nVeja a obra: ${obraUrl}\n\nAguardo retorno.`);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
-      <h1 className="text-4xl font-serif font-bold border-b pb-4">{obra.titulo}</h1>
+    <div className="max-w-5xl mx-auto space-y-8 p-4 md:p-8 bg-[#fcfbf9] min-h-screen text-stone-800">
+      <h1 className="text-2xl md:text-4xl font-serif font-bold border-b-4 border-amber-400/30 pb-4 text-transparent bg-clip-text bg-gradient-to-r from-teal-700 via-yellow-500 to-amber-600">{obra.titulo}</h1>
 
       <div className="grid md:grid-cols-3 gap-8">
         {/* Main Media */}
-        <div className="md:col-span-2">
-          <Card className="p-2">
+        <div className="md:col-span-2 space-y-6">
+          <Card className="p-2 overflow-hidden rounded-2xl border-none shadow-lg bg-white/80 backdrop-blur-sm">
             {obra.img ? (
               <img 
                 src={imageUrl} 
                 alt={obra.titulo || "Obra de Arte"} 
-                className="w-full h-auto object-contain max-h-[70vh] rounded-lg" 
+                className="w-full h-auto object-contain max-h-[70vh] rounded-xl" 
               />
             ) : (
               <div className="w-full h-[500px] bg-gray-100 dark:bg-gray-900 flex items-center justify-center rounded-lg">
@@ -118,8 +118,8 @@ const ObraDetail: React.FC = () => {
           </Card>
           
           {videoUrl && (
-            <Card className="mt-4 p-4">
-              <h2 className="text-xl font-semibold flex items-center mb-2"><Video className="h-5 w-5 mr-2" /> Vídeo da Obra</h2>
+            <Card className="p-4 rounded-2xl border-none shadow-lg bg-white/80 backdrop-blur-sm">
+              <h2 className="text-lg md:text-xl font-semibold flex items-center mb-2 text-teal-700"><Video className="h-5 w-5 mr-2" /> Vídeo da Obra</h2>
               <video controls src={videoUrl} className="w-full rounded-lg" />
             </Card>
           )}
@@ -127,28 +127,28 @@ const ObraDetail: React.FC = () => {
 
         {/* Details and Owner */}
         <div className="md:col-span-1 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl">Detalhes</CardTitle>
+          <Card className="rounded-2xl border-none shadow-md bg-white/90">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl md:text-2xl text-teal-800">Detalhes</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center text-sm text-muted-foreground">
-                <Calendar className="h-4 w-4 mr-2" />
-                Data de Criação: <span className="ml-2 font-medium text-foreground">{creationDate}</span>
+                <Calendar className="h-4 w-4 mr-2 text-amber-500" />
+                Data de Criação: <span className="ml-2 font-medium text-stone-700">{creationDate}</span>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl">Proprietário</CardTitle>
+          <Card className="rounded-2xl border-none shadow-md bg-white/90">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xl md:text-2xl text-teal-800">Proprietário</CardTitle>
             </CardHeader>
             <CardContent className="flex items-center space-x-4">
               {obra.foto_dono ? (
                 <img 
                   src={ownerPhotoUrl} 
                   alt={obra.nome_dono || "Dono"} 
-                  className="w-16 h-16 rounded-full object-cover border-2 border-accent" 
+                  className="w-16 h-16 rounded-full object-cover border-2 border-amber-400" 
                 />
               ) : (
                 <div className="w-16 h-16 rounded-full bg-secondary flex items-center justify-center">
@@ -163,17 +163,17 @@ const ObraDetail: React.FC = () => {
           </Card>
 
           {(obra.email_dono || obra.telefone_dono) && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-xl flex items-center gap-2">
-                  <Share2 className="h-5 w-5" />
+            <Card className="rounded-2xl border-none shadow-md bg-gradient-to-br from-white to-stone-50">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg md:text-xl flex items-center gap-2 text-teal-800">
+                  <Share2 className="h-5 w-5 text-amber-500" />
                   Entrar em Contato
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {obra.email_dono && (
                   <a href={`mailto:${obra.email_dono}?subject=${emailSubject}&body=${emailBody}`} target="_blank" rel="noopener noreferrer">
-                    <Button variant="outline" className="w-full">
+                    <Button variant="outline" className="w-full border-teal-200 hover:bg-teal-50 hover:text-teal-700 transition-colors">
                       <Mail className="h-4 w-4 mr-2" />
                       Enviar Email
                     </Button>
@@ -181,7 +181,7 @@ const ObraDetail: React.FC = () => {
                 )}
                 {obra.telefone_dono && (
                   <a href={`https://wa.me/${obra.telefone_dono.replace(/\D/g, '')}?text=${whatsappMessage}`} target="_blank" rel="noopener noreferrer">
-                    <Button variant="outline" className="w-full" style={{backgroundColor: '#25D366', color: 'white'}}>
+                    <Button className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white border-none transition-colors">
                       <Phone className="h-4 w-4 mr-2" />
                       WhatsApp
                     </Button>
@@ -192,14 +192,13 @@ const ObraDetail: React.FC = () => {
           )}
 
           {isOwner && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-xl">Gerenciar Obra</CardTitle>
+            <Card className="rounded-2xl border-none shadow-md bg-white/90">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg md:text-xl text-stone-700">Gerenciar Obra</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <Button 
-                  variant="outline" 
-                  className="w-full"
+                  className="w-full bg-gradient-to-r from-teal-600 to-teal-500 hover:from-teal-700 hover:to-teal-600 text-white border-none"
                   onClick={() => navigate(`/admin/edit-obra/${obraId}`)}
                 >
                   <Edit className="h-4 w-4 mr-2" />

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Palette, User, Plus, Users, LogIn, LogOut } from "lucide-react";
+import { Palette, User, Plus, Users, LogIn, LogOut, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,19 +12,21 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
-const NavItem: React.FC<{ to: string; icon: React.ReactNode; label: string }> = ({ to, icon, label }) => (
+const NavItem: React.FC<{ to: string; icon: React.ReactNode; label: string; onClick?: () => void }> = ({ to, icon, label, onClick }) => (
   <Link
     to={to}
+    onClick={onClick}
     className="flex items-center space-x-2 p-3 rounded-lg hover:bg-gray-100 transition-colors dark:hover:bg-gray-800"
   >
     {icon}
-    <span className="hidden sm:inline">{label}</span>
+    <span>{label}</span>
   </Link>
 );
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const showAdminLink = true;
 
   useEffect(() => {
@@ -45,6 +47,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     await supabase.auth.signOut();
     showSuccess("Logout realizado com sucesso!");
     navigate("/");
+    setIsMenuOpen(false);
   }; 
 
   const { data: profile } = useQuery({
@@ -65,16 +68,20 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     );
   } 
 
+  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+  const closeMenu = () => setIsMenuOpen(false);
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Header/Navigation */}
       <header className="sticky top-0 z-10 border-b bg-white/80 backdrop-blur-sm dark:bg-background/80">
         <div className="container mx-auto flex justify-between items-center p-4">
-          <Link to="/" className="text-2xl font-serif font-bold text-primary dark:text-primary-foreground flex items-center">
-            <Palette className="mr-2 h-6 w-6" />
-            Art Gallery
+          <Link to="/" className="flex items-center" onClick={closeMenu}>
+            <img src="/logo.png" alt="Art Gallery" className="h-14 w-auto" />
           </Link>
-          <nav className="flex space-x-4 items-center">
+          
+          {/* Desktop Nav */}
+          <nav className="hidden md:flex space-x-4 items-center">
             <NavItem to="/" icon={<Palette className="h-5 w-5" />} label="Gallery" />
             {isAuthenticated && (
               <>
@@ -85,7 +92,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 )}
                 <Button variant="ghost" size="sm" onClick={handleLogout}>
                   <LogOut className="h-5 w-5 mr-2" />
-                  <span className="hidden sm:inline">Sair</span>
+                  <span>Sair</span>
                 </Button>
               </>
             )}
@@ -93,12 +100,45 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <Link to="/auth">
                 <Button variant="ghost" size="sm">
                   <LogIn className="h-5 w-5 mr-2" />
-                  <span className="hidden sm:inline">Entrar</span>
+                  <span>Entrar</span>
                 </Button>
               </Link>
             )}
           </nav>
+
+          {/* Mobile Menu Button */}
+          <button className="md:hidden p-2" onClick={toggleMenu}>
+            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+          </button>
         </div>
+
+        {/* Mobile Nav */}
+        {isMenuOpen && (
+          <nav className="md:hidden border-t p-4 flex flex-col space-y-2 bg-white dark:bg-background">
+            <NavItem to="/" icon={<Palette className="h-5 w-5" />} label="Gallery" onClick={closeMenu} />
+            {isAuthenticated && (
+              <>
+                <NavItem to="/profile" icon={<User className="h-5 w-5" />} label="Profile" onClick={closeMenu} />
+                <NavItem to="/admin/new-obra" icon={<Plus className="h-5 w-5" />} label="Add Art" onClick={closeMenu} />
+                {showAdminLink && (
+                  <NavItem to="/admin/users" icon={<Users className="h-5 w-5" />} label="Admin Users" onClick={closeMenu} />
+                )}
+                <Button variant="ghost" size="sm" onClick={handleLogout} className="justify-start w-full">
+                  <LogOut className="h-5 w-5 mr-2" />
+                  <span>Sair</span>
+                </Button>
+              </>
+            )}
+            {!isAuthenticated && (
+              <Link to="/auth" onClick={closeMenu}>
+                <Button variant="ghost" size="sm" className="justify-start w-full">
+                  <LogIn className="h-5 w-5 mr-2" />
+                  <span>Entrar</span>
+                </Button>
+              </Link>
+            )}
+          </nav>
+        )}
       </header>
 
       {/* Main Content */}
