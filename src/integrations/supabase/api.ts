@@ -92,13 +92,20 @@ export const updateArtistProfile = async (id: string, profileData: Partial<Omit<
 };
 
 export const fetchObras = async (): Promise<Obra[]> => {
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return []; // Se não estiver logado, não retorna nenhuma obra
+  }
+
   const { data, error } = await supabase
     .from("obras")
     .select("*")
+    .eq("user_id", user.id) // Filtra pelo ID do usuário logado
     .order("data_criacao", { ascending: false });
 
   if (error) {
-    console.error("Error fetching obras:", error);
+    console.error("Error fetching user's obras:", error);
     return [];
   }
   
