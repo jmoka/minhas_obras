@@ -24,7 +24,6 @@ serve(async (req) => {
       });
     }
 
-    // 1. Initialize Supabase client for RLS check (using anon key)
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       console.error(`[${functionName}] Unauthorized: Missing Authorization header.`);
@@ -44,7 +43,6 @@ serve(async (req) => {
       }
     );
 
-    // 2. Get current user and verify admin
     const { data: { user: currentUser }, error: userError } = await supabaseAnon.auth.getUser();
 
     if (userError || !currentUser) {
@@ -62,54 +60,62 @@ serve(async (req) => {
       .single();
 
     if (profileError || !profile || profile.admin !== true) {
-      console.warn(`[${functionName}] User ${currentUser.id} attempted to delete user but is not an admin.`);
       return new Response(JSON.stringify({ error: "Forbidden: Only administrators can delete users." }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
     
-    // 3. Prevent self-deletion
     if (currentUser.id === userId) {
-      console.warn(`[${functionName}] User ${currentUser.id} attempted to delete themselves.`);
       return new Response(
         JSON.stringify({ error: "Você não pode deletar sua própria conta." }), 
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // 4. Prevent deleting any admin user
-    const { data: targetUser, error: targetUserError } = await supabaseAnon
+    const { data: targetUser } = await supabaseAnon
       .from("user")
       .select("admin")
       .eq("id", userId)
       .single();
 
-    if (targetUserError) {
-      console.error(`[${functionName}] Error checking target user status:`, targetUserError.message);
-      return new Response(JSON.stringify({ error: "Could not verify user to be deleted." }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     if (targetUser?.admin) {
-      console.warn(`[${functionName}] Admin ${currentUser.id} attempted to delete another admin ${userId}. This is not allowed.`);
       return new Response(
         JSON.stringify({ error: "Não é possível deletar usuários administradores." }), 
         { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    console.log(`[${functionName}] Admin user ${currentUser.id} is deleting user ${userId}.`);
+    // NOVA LÓGICA: Verificar se o usuário possui obras
+    const { count, error: countError } = await supabaseAnon
+      .from("obras")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId);
 
-    // 5. Initialize Supabase client with Service Role Key for auth deletion
+    if (countError) {
+      console.error(`[${functionName}] Error counting obras:`, countError.message);
+      return new Response(JSON.stringify({ error: "Failed to check user's artworks." }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    if (count !== null && count > 0) {
+      console.warn(`[${functionName}] Attempted to delete user ${userId} with ${count} artworks.`);
+      return new Response(
+        JSON.stringify({ error: `Este usuário possui ${count} obra(s) e não pode ser deletado. Bloqueie o usuário em vez disso.` }), 
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Se não houver obras, prosseguir com a exclusão
+    console.log(`[${functionName}] Admin user ${currentUser.id} is deleting user ${userId} (no artworks found).`);
+
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // 6. Delete from auth.users. The ON DELETE CASCADE will handle deleting from the 'user' table.
     const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
     if (deleteAuthError) {

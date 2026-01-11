@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { User as UserIcon, Edit, Trash2 } from "lucide-react";
+import { User as UserIcon, Edit, Trash2, ShieldBan } from "lucide-react";
 import { getPublicUrl } from "@/integrations/supabase/api";
 import { UserProfile } from "@/types/database";
 import EditUserDialog from "./EditUserDialog";
@@ -74,7 +74,7 @@ const AllUsersList: React.FC = () => {
       
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {users.map((user) => (
-          <Card key={user.id} className="overflow-hidden rounded-xl border-none shadow-md bg-white/80 backdrop-blur-sm hover:shadow-lg transition-all duration-300 group">
+          <Card key={user.id} className={`overflow-hidden rounded-xl border-none shadow-md bg-white/80 backdrop-blur-sm hover:shadow-lg transition-all duration-300 group ${user.bloc ? 'opacity-60' : ''}`}>
             <CardContent className="p-4 flex items-center space-x-4">
               <div className="relative h-16 w-16 flex-shrink-0">
                 {user.foto ? (
@@ -88,6 +88,11 @@ const AllUsersList: React.FC = () => {
                     <UserIcon className="h-8 w-8 text-stone-400" />
                   </div>
                 )}
+                {user.bloc && (
+                  <div className="absolute -top-1 -right-1 bg-red-600 p-1 rounded-full border-2 border-white">
+                    <ShieldBan className="h-4 w-4 text-white" />
+                  </div>
+                )}
               </div>
               
               <div className="flex-1 min-w-0">
@@ -99,6 +104,9 @@ const AllUsersList: React.FC = () => {
                     <Badge className="bg-teal-600 text-white text-xs">Admin</Badge>
                   ) : (
                     <Badge variant="secondary" className="text-xs">Usuário</Badge>
+                  )}
+                  {user.bloc && (
+                    <Badge variant="destructive" className="text-xs">Bloqueado</Badge>
                   )}
                 </div>
                 <p className="text-sm text-stone-500 line-clamp-2">

@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    const { userId, email, password, user_metadata, admin } = await req.json();
+    const { userId, email, password, user_metadata, admin, bloc } = await req.json();
 
     if (!userId) {
       console.error(`[${functionName}] Missing userId.`);
@@ -24,7 +24,6 @@ serve(async (req) => {
       });
     }
 
-    // 1. Initialize Supabase client for RLS check (using anon key)
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       console.error(`[${functionName}] Unauthorized: Missing Authorization header.`);
@@ -44,7 +43,6 @@ serve(async (req) => {
       }
     );
 
-    // 2. Get current user and verify admin
     const { data: { user: currentUser }, error: userError } = await supabaseAnon.auth.getUser();
 
     if (userError || !currentUser) {
@@ -62,7 +60,6 @@ serve(async (req) => {
       .single();
 
     if (profileError || !profile || profile.admin !== true) {
-      console.warn(`[${functionName}] User ${currentUser.id} attempted to update user but is not an admin.`);
       return new Response(JSON.stringify({ error: "Forbidden: Only administrators can update users." }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -71,8 +68,7 @@ serve(async (req) => {
     
     console.log(`[${functionName}] Admin user ${currentUser.id} is updating user ${userId}.`);
 
-    // 3. Check if trying to remove admin from last admin
-    if (admin === false) {
+    if (admin === false || bloc === true) {
       const { count } = await supabaseAnon
         .from("user")
         .select("*", { count: "exact", head: true })
@@ -86,22 +82,21 @@ serve(async (req) => {
           .single();
         
         if (targetUser?.admin) {
-          console.warn(`[${functionName}] Cannot remove admin permission from last admin.`);
+          const errorMsg = "Não é possível remover o último administrador do sistema.";
+          console.warn(`[${functionName}] ${errorMsg}`);
           return new Response(
-            JSON.stringify({ error: "Não é possível remover o último administrador do sistema." }), 
+            JSON.stringify({ error: errorMsg }), 
             { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
       }
     }
 
-    // 4. Initialize Supabase client with Service Role Key for admin actions
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // 5. Update auth.users if email or password provided
     const updatePayload: any = {};
     if (email) updatePayload.email = email;
     if (password) updatePayload.password = password;
@@ -122,13 +117,13 @@ serve(async (req) => {
       }
     }
 
-    // 6. Update user table
     const userTableUpdate: any = {};
     if (user_metadata?.nome) userTableUpdate.nome = user_metadata.nome;
     if (admin !== undefined) userTableUpdate.admin = admin;
+    if (bloc !== undefined) userTableUpdate.bloc = bloc;
 
     if (Object.keys(userTableUpdate).length > 0) {
-      const { error: tableUpdateError } = await supabaseAnon
+      const { error: tableUpdateError } = await supabaseAdmin
         .from("user")
         .update(userTableUpdate)
         .eq("id", userId);

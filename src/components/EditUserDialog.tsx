@@ -14,9 +14,10 @@ import { UserProfile } from "@/types/database";
 
 const editUserSchema = z.object({
   nome: z.string().min(1, "Nome é obrigatório"),
-  email: z.string().email("Email inválido"),
+  email: z.string().email("Email inválido").optional().or(z.literal("")),
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres").optional().or(z.literal("")),
   admin: z.boolean(),
+  bloc: z.boolean(),
 });
 
 type EditUserFormValues = z.infer<typeof editUserSchema>;
@@ -38,6 +39,7 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({ user, open, onOpenChang
       email: "",
       password: "",
       admin: user?.admin || false,
+      bloc: user?.bloc || false,
     },
   });
 
@@ -48,6 +50,7 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({ user, open, onOpenChang
         email: "",
         password: "",
         admin: user.admin || false,
+        bloc: user.bloc || false,
       });
     }
   }, [user, form]);
@@ -62,6 +65,7 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({ user, open, onOpenChang
       const payload: any = {
         userId: user.id,
         admin: values.admin,
+        bloc: values.bloc,
       };
 
       if (values.nome !== user.nome) {
@@ -99,7 +103,7 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({ user, open, onOpenChang
         <DialogHeader>
           <DialogTitle className="text-2xl font-serif text-teal-800">Editar Usuário</DialogTitle>
           <DialogDescription>
-            Atualize as informações do usuário. Deixe os campos vazios para não alterá-los.
+            Atualize as informações do usuário. Deixe os campos de email e senha vazios para não alterá-los.
           </DialogDescription>
         </DialogHeader>
 
@@ -162,7 +166,28 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({ user, open, onOpenChang
                   <div className="space-y-0.5">
                     <FormLabel className="text-base">Administrador</FormLabel>
                     <FormDescription>
-                      Concede permissões administrativas ao usuário
+                      Concede permissões administrativas.
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="bloc"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 bg-amber-50/50 border-amber-200">
+                  <div className="space-y-0.5">
+                    <FormLabel className="text-base text-amber-900">Bloquear Usuário</FormLabel>
+                    <FormDescription>
+                      Impede o usuário de fazer login.
                     </FormDescription>
                   </div>
                   <FormControl>
