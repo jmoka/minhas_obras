@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 
 const PublicGallery: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedArtist, setSelectedArtist] = useState("");
+  const [selectedArtist, setSelectedArtist] = useState("all");
 
   const { data: obras, isLoading: isLoadingObras } = useQuery({
     queryKey: ["publicObras"],
@@ -31,14 +31,14 @@ const PublicGallery: React.FC = () => {
     if (!obras) return [];
     return obras.filter((obra) => {
       const matchesSearch = obra.titulo?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesArtist = !selectedArtist || obra.user_id === selectedArtist;
+      const matchesArtist = selectedArtist === "all" || obra.user_id === selectedArtist;
       return matchesSearch && matchesArtist;
     });
   }, [obras, searchTerm, selectedArtist]);
 
   const handleClearFilters = () => {
     setSearchTerm("");
-    setSelectedArtist("");
+    setSelectedArtist("all");
   };
 
   return (
@@ -108,15 +108,15 @@ const PublicGallery: React.FC = () => {
                 <SelectValue placeholder="Filtrar por artista" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os Artistas</SelectItem>
-                {artists?.map((artist) => (
+                <SelectItem value="all">Todos os Artistas</SelectItem>
+                {artists?.filter(artist => artist.nome).map((artist) => (
                   <SelectItem key={artist.id} value={artist.id}>
                     {artist.nome}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {(searchTerm || selectedArtist) && (
+            {(searchTerm || selectedArtist !== 'all') && (
               <Button variant="ghost" onClick={handleClearFilters}>
                 <XIcon className="h-4 w-4 mr-2" />
                 Limpar
