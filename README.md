@@ -1,6 +1,6 @@
 # Minhas Artes - Galeria de Arte
 
-Sistema de galeria de arte com cadastro de usuários, obras e galerias de imagens.
+## Sistema de galeria de arte com cadastro de usuários, obras e galerias de imagens
 
 ## 🗄️ Estrutura do Banco de Dados
 
