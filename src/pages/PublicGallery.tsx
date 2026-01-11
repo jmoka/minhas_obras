@@ -1,14 +1,20 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAllPublicObras, fetchAllArtists, getPublicUrl } from "@/integrations/supabase/api";
 import ObraCard from "@/components/ObraCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Palette } from "lucide-react";
+import { User, Palette, Search, X as XIcon } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 
 const PublicGallery: React.FC = () => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedArtist, setSelectedArtist] = useState("");
+
   const { data: obras, isLoading: isLoadingObras } = useQuery({
     queryKey: ["publicObras"],
     queryFn: fetchAllPublicObras,
@@ -20,6 +26,20 @@ const PublicGallery: React.FC = () => {
   });
 
   const isLoading = isLoadingObras || isLoadingArtists;
+
+  const filteredObras = useMemo(() => {
+    if (!obras) return [];
+    return obras.filter((obra) => {
+      const matchesSearch = obra.titulo?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesArtist = !selectedArtist || obra.user_id === selectedArtist;
+      return matchesSearch && matchesArtist;
+    });
+  }, [obras, searchTerm, selectedArtist]);
+
+  const handleClearFilters = () => {
+    setSearchTerm("");
+    setSelectedArtist("");
+  };
 
   return (
     <div className="space-y-12">
@@ -66,23 +86,58 @@ const PublicGallery: React.FC = () => {
 
       {/* Artworks Section */}
       <section>
-        <h2 className="text-3xl font-serif font-bold text-stone-800 mb-6 flex items-center gap-3">
-          <Palette className="w-8 h-8 text-amber-600" />
-          Galeria de Obras
-        </h2>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+          <h2 className="text-3xl font-serif font-bold text-stone-800 flex items-center gap-3 shrink-0">
+            <Palette className="w-8 h-8 text-amber-600" />
+            Galeria de Obras
+          </h2>
+          
+          {/* Filters */}
+          <div className="w-full md:w-auto flex flex-col sm:flex-row gap-4">
+            <div className="relative w-full sm:w-auto">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+              <Input
+                placeholder="Buscar por título..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 w-full sm:w-64"
+              />
+            </div>
+            <Select value={selectedArtist} onValueChange={setSelectedArtist}>
+              <SelectTrigger className="w-full sm:w-[200px]">
+                <SelectValue placeholder="Filtrar por artista" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Todos os Artistas</SelectItem>
+                {artists?.map((artist) => (
+                  <SelectItem key={artist.id} value={artist.id}>
+                    {artist.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {(searchTerm || selectedArtist) && (
+              <Button variant="ghost" onClick={handleClearFilters}>
+                <XIcon className="h-4 w-4 mr-2" />
+                Limpar
+              </Button>
+            )}
+          </div>
+        </div>
+
         {isLoading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {Array.from({ length: 8 }).map((_, i) => (
               <Skeleton key={i} className="h-[400px] w-full rounded-xl" />
             ))}
           </div>
-        ) : !obras || obras.length === 0 ? (
-          <Card className="text-center p-12 bg-stone-50">
-            <p className="text-stone-500">Nenhuma obra de arte encontrada na galeria.</p>
+        ) : filteredObras.length === 0 ? (
+          <Card className="text-center p-12 bg-stone-50 col-span-full">
+            <p className="text-stone-500">Nenhuma obra encontrada com os filtros selecionados.</p>
           </Card>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {obras.map((obra) => (
+            {filteredObras.map((obra) => (
               <ObraCard key={obra.id} obra={obra} />
             ))}
           </div>

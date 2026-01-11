@@ -20,6 +20,11 @@ export interface Obra {
   foto_dono: string | null; // UUID/path para storage reference (corrigido de foto_done)
   telefone_dono?: string | null;
   email_dono?: string | null;
+  user: { // Dados do artista associado
+    id: string;
+    nome: string | null;
+    foto: string | null;
+  } | null;
 }
 
 export interface Img {

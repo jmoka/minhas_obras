@@ -94,7 +94,7 @@ export const updateArtistProfile = async (id: string, profileData: Partial<Omit<
 export const fetchAllPublicObras = async (): Promise<Obra[]> => {
   const { data, error } = await supabase
     .from("obras")
-    .select("*")
+    .select("*, user(id, nome, foto)")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -128,7 +128,7 @@ export const fetchObras = async (): Promise<Obra[]> => {
 
   const { data, error } = await supabase
     .from("obras")
-    .select("*")
+    .select("*, user(id, nome, foto)")
     .eq("user_id", user.id) // Filtra pelo ID do usuário logado
     .order("data_criacao", { ascending: false });
 
@@ -143,7 +143,7 @@ export const fetchObras = async (): Promise<Obra[]> => {
 export const fetchObraById = async (id: string): Promise<Obra | null> => {
   const { data, error } = await supabase
     .from("obras")
-    .select("*")
+    .select("*, user(id, nome, foto)")
     .eq("id", id)
     .single();
 
@@ -155,7 +155,7 @@ export const fetchObraById = async (id: string): Promise<Obra | null> => {
   return data as Obra;
 };
 
-export const insertNewObra = async (obraData: Omit<Obra, 'id' | 'created_at'>): Promise<Obra | null> => {
+export const insertNewObra = async (obraData: Omit<Obra, 'id' | 'created_at' | 'user'>): Promise<Obra | null> => {
   if (!obraData.user_id) {
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
