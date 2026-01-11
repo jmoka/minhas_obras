@@ -99,7 +99,7 @@ const ArtistPublicPage: React.FC = () => {
               className="relative w-48 h-48 rounded-full object-cover border-8 border-white shadow-2xl transform group-hover:scale-105 transition-transform duration-300"
             />
           </div>
-          <h1 className="text-6xl font-serif font-bold mb-3 tracking-tight drop-shadow-lg">
+          <h1 className="text-5xl font-serif font-bold mb-3 tracking-tight drop-shadow-lg">
             {artist.nome || "Artista Anônimo"}
           </h1>
           <div className="flex items-center gap-2 text-white/90 text-lg">
