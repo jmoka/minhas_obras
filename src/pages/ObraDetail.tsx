@@ -5,7 +5,7 @@ import { fetchObraById, getPublicUrl } from "@/integrations/supabase/api";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Video, User, Image, Mail, Phone, Share2, Edit, Trash2, BookText } from "lucide-react";
+import { Calendar, Video, User, Image, Mail, Phone, Share2, Edit, Trash2, BookText, PlayCircle } from "lucide-react";
 import GalleryManager from "@/components/GalleryManager";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,8 +17,12 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { showSuccess, showError } from "@/utils/toast";
 
 const ObraDetail: React.FC = () => {
@@ -70,7 +74,6 @@ const ObraDetail: React.FC = () => {
   const ownerPhotoUrl = getPublicUrl(obra.foto_dono);
   const creationDate = obra.data_criacao ? new Date(obra.data_criacao).toLocaleDateString('pt-BR') : 'Data Desconhecida';
   
-  // Comparação de IDs como strings (UUID direto)
   const isOwner = currentUser && obra.user_id && currentUser.id === obra.user_id;
 
   const handleDelete = async () => {
@@ -90,7 +93,6 @@ const ObraDetail: React.FC = () => {
     }
   };
 
-  // Contact message encoding
   const obraUrl = `${window.location.origin}/obras/${obraId}`;
   const whatsappMessage = encodeURIComponent(`Olá! Gostaria de saber mais sobre a obra "${obra.titulo}" que está em sua coleção.\n\nVeja a obra: ${obraUrl}`);
   const emailSubject = encodeURIComponent(`Interesse na obra: ${obra.titulo}`);
@@ -101,7 +103,6 @@ const ObraDetail: React.FC = () => {
       <h1 className="text-2xl md:text-4xl font-serif font-bold border-b-4 border-amber-400/30 pb-4 text-transparent bg-clip-text bg-gradient-to-r from-teal-700 via-yellow-500 to-amber-600">{obra.titulo}</h1>
 
       <div className="grid md:grid-cols-3 gap-8">
-        {/* Main Media */}
         <div className="md:col-span-2 space-y-6">
           <Card className="p-2 overflow-hidden rounded-2xl border-none shadow-lg bg-white/80 backdrop-blur-sm">
             {obra.img ? (
@@ -118,10 +119,22 @@ const ObraDetail: React.FC = () => {
           </Card>
           
           {videoUrl && (
-            <Card className="p-4 rounded-2xl border-none shadow-lg bg-white/80 backdrop-blur-sm">
-              <h2 className="text-lg md:text-xl font-semibold flex items-center mb-2 text-teal-700"><Video className="h-5 w-5 mr-2" /> Vídeo da Obra</h2>
-              <video controls src={videoUrl} className="w-full rounded-lg" />
-            </Card>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Card className="p-4 rounded-2xl border-none shadow-lg bg-white/80 backdrop-blur-sm cursor-pointer group">
+                  <h2 className="text-lg md:text-xl font-semibold flex items-center mb-2 text-teal-700"><Video className="h-5 w-5 mr-2" /> Vídeo da Obra</h2>
+                  <div className="relative overflow-hidden rounded-lg">
+                    <img src={imageUrl} alt="Poster do vídeo" className="w-full transition-transform duration-300 group-hover:scale-105" />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                      <PlayCircle className="h-16 w-16 text-white/80 group-hover:text-white transition-all duration-300 group-hover:scale-110" />
+                    </div>
+                  </div>
+                </Card>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl p-0 border-0 bg-transparent shadow-none">
+                <video controls autoPlay src={videoUrl} className="w-full rounded-lg" />
+              </DialogContent>
+            </Dialog>
           )}
 
           {obra.descricao && (
@@ -136,7 +149,6 @@ const ObraDetail: React.FC = () => {
           )}
         </div>
 
-        {/* Details and Owner */}
         <div className="md:col-span-1 space-y-6">
           <Card className="rounded-2xl border-none shadow-md bg-white/90">
             <CardHeader className="pb-2">
