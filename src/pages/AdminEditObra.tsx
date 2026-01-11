@@ -16,10 +16,12 @@ import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useParams, useNavigate } from "react-router-dom";
+import { Textarea } from "@/components/ui/textarea";
 
 // Define the schema for the form
 const formSchema = z.object({
   titulo: z.string().min(1, "O título é obrigatório."),
+  descricao: z.string().optional(),
   data_criacao: z.date({ required_error: "A data de criação é obrigatória." }),
   nome_dono: z.string().min(1, "O nome do dono é obrigatório."),
   telefone_dono: z.string().optional(),
@@ -55,6 +57,7 @@ const AdminEditObra: React.FC = () => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       titulo: "",
+      descricao: "",
       nome_dono: "",
     },
   });
@@ -64,6 +67,7 @@ const AdminEditObra: React.FC = () => {
     if (obra) {
       form.reset({
         titulo: obra.titulo || "",
+        descricao: obra.descricao || "",
         data_criacao: obra.data_criacao ? new Date(obra.data_criacao) : undefined,
         nome_dono: obra.nome_dono || "",
         telefone_dono: obra.telefone_dono || "",
@@ -97,6 +101,7 @@ const AdminEditObra: React.FC = () => {
 
       const updateData: any = {
         titulo: values.titulo,
+        descricao: values.descricao || null,
         data_criacao: format(values.data_criacao, 'yyyy-MM-dd'),
         nome_dono: values.nome_dono,
         telefone_dono: values.telefone_dono || null,
@@ -176,6 +181,26 @@ const AdminEditObra: React.FC = () => {
                     <FormLabel>Título da Obra</FormLabel>
                     <FormControl>
                       <Input placeholder="Ex: O Grito" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Descrição */}
+              <FormField
+                control={form.control}
+                name="descricao"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Descrição da Obra</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Fale sobre a técnica, inspiração, etc."
+                        className="resize-none"
+                        {...field}
+                        value={field.value || ""}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

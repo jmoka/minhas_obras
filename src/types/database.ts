@@ -13,6 +13,7 @@ export interface Obra {
   created_at: string;
   user_id: string | null; // bigint - References UserProfile.id
   titulo: string | null;
+  descricao: string | null;
   data_criacao: string | null; // date string
   img: string | null; // UUID/path para storage reference
   video: string | null; // UUID/path para storage reference

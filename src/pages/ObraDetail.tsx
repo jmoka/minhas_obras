@@ -5,7 +5,7 @@ import { fetchObraById, getPublicUrl } from "@/integrations/supabase/api";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Calendar, Video, User, Image, Mail, Phone, Share2, Edit, Trash2 } from "lucide-react";
+import { Calendar, Video, User, Image, Mail, Phone, Share2, Edit, Trash2, BookText } from "lucide-react";
 import GalleryManager from "@/components/GalleryManager";
 import { Button } from "@/components/ui/button";
 import {
@@ -121,6 +121,17 @@ const ObraDetail: React.FC = () => {
             <Card className="p-4 rounded-2xl border-none shadow-lg bg-white/80 backdrop-blur-sm">
               <h2 className="text-lg md:text-xl font-semibold flex items-center mb-2 text-teal-700"><Video className="h-5 w-5 mr-2" /> Vídeo da Obra</h2>
               <video controls src={videoUrl} className="w-full rounded-lg" />
+            </Card>
+          )}
+
+          {obra.descricao && (
+            <Card className="p-4 rounded-2xl border-none shadow-lg bg-white/80 backdrop-blur-sm">
+              <h2 className="text-lg md:text-xl font-semibold flex items-center mb-2 text-teal-700">
+                <BookText className="h-5 w-5 mr-2" /> Sobre a Obra
+              </h2>
+              <p className="text-stone-700 whitespace-pre-wrap">
+                {obra.descricao}
+              </p>
             </Card>
           )}
         </div>
