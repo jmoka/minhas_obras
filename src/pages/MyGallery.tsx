@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
-const Index: React.FC = () => {
+const MyGallery: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
 
@@ -27,9 +27,9 @@ const Index: React.FC = () => {
   }, []);
 
   const { data: obras, isLoading, error } = useQuery({
-    queryKey: ["obras", isAuthenticated], // Reexecuta a query quando o status de autenticação muda
+    queryKey: ["obras", isAuthenticated],
     queryFn: fetchObras,
-    enabled: !isAuthLoading, // Só busca os dados após verificar a autenticação
+    enabled: !isAuthLoading && isAuthenticated,
   });
 
   if (isLoading || isAuthLoading) {
@@ -51,30 +51,30 @@ const Index: React.FC = () => {
     return <div className="text-center text-red-500 p-8">Erro ao carregar as obras.</div>;
   }
   
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-[#fcfbf9] p-4 md:p-8 text-center flex flex-col items-center justify-center">
+        <img src="/logo.png" alt="Logo" className="h-20 w-auto mb-6" />
+        <h1 className="text-3xl font-serif mb-4 text-teal-800">Acesso Restrito</h1>
+        <p className="text-lg text-muted-foreground max-w-md">Você precisa estar logado para ver suas obras. Faça login ou crie uma conta.</p>
+        <Link to="/auth">
+          <Button className="mt-6 bg-gradient-to-r from-teal-600 to-teal-500 text-white">Entrar ou Cadastrar</Button>
+        </Link>
+      </div>
+    );
+  }
+
   if (!obras || obras.length === 0) {
-    if (isAuthenticated) {
-      return (
-        <div className="min-h-screen bg-[#fcfbf9] p-4 md:p-8 text-center flex flex-col items-center justify-center">
-          <img src="/logo.png" alt="Logo" className="h-20 w-auto mb-6" />
-          <h1 className="text-3xl font-serif mb-4 text-teal-800">Sua Galeria Pessoal está Vazia</h1>
-          <p className="text-lg text-muted-foreground max-w-md">Você ainda não adicionou nenhuma obra. Clique no botão abaixo para começar a construir sua coleção.</p>
-          <Link to="/admin/new-obra">
-            <Button className="mt-6 bg-gradient-to-r from-teal-600 to-teal-500 text-white">Adicionar Nova Obra</Button>
-          </Link>
-        </div>
-      );
-    } else {
-      return (
-        <div className="min-h-screen bg-[#fcfbf9] p-4 md:p-8 text-center flex flex-col items-center justify-center">
-          <img src="/logo.png" alt="Logo" className="h-20 w-auto mb-6" />
-          <h1 className="text-3xl font-serif mb-4 text-teal-800">Bem-vindo à sua Galeria Pessoal</h1>
-          <p className="text-lg text-muted-foreground max-w-md">Faça login para ver e gerenciar suas obras de arte, ou crie uma conta para começar sua coleção.</p>
-          <Link to="/auth">
-            <Button className="mt-6 bg-gradient-to-r from-teal-600 to-teal-500 text-white">Entrar ou Cadastrar</Button>
-          </Link>
-        </div>
-      );
-    }
+    return (
+      <div className="min-h-screen bg-[#fcfbf9] p-4 md:p-8 text-center flex flex-col items-center justify-center">
+        <img src="/logo.png" alt="Logo" className="h-20 w-auto mb-6" />
+        <h1 className="text-3xl font-serif mb-4 text-teal-800">Sua Galeria Pessoal está Vazia</h1>
+        <p className="text-lg text-muted-foreground max-w-md">Você ainda não adicionou nenhuma obra. Clique no botão abaixo para começar a construir sua coleção.</p>
+        <Link to="/admin/new-obra">
+          <Button className="mt-6 bg-gradient-to-r from-teal-600 to-teal-500 text-white">Adicionar Nova Obra</Button>
+        </Link>
+      </div>
+    );
   }
 
   return (
@@ -94,4 +94,4 @@ const Index: React.FC = () => {
   );
 };
 
-export default Index;
+export default MyGallery;

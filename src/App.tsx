@@ -4,7 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
-import Index from "./pages/Index";
+import PublicGallery from "./pages/PublicGallery";
+import MyGallery from "./pages/MyGallery";
 import NotFound from "./pages/NotFound";
 import ObraDetail from "./pages/ObraDetail";
 import AdminNewObra from "./pages/AdminNewObra";
@@ -24,7 +25,8 @@ const App = () => (
       <BrowserRouter>
         <Layout>
           <Routes>
-            <Route path="/" element={<Index />} />
+            <Route path="/" element={<PublicGallery />} />
+            <Route path="/my-gallery" element={<MyGallery />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/obras/:id" element={<ObraDetail />} />
             <Route path="/admin/new-obra" element={<AdminNewObra />} />

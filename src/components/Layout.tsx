@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Palette, User, Plus, Users, LogIn, LogOut, Menu, X } from "lucide-react";
+import { Palette, User, Plus, Users, LogIn, LogOut, Menu, X, Home } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const showAdminLink = true;
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -82,13 +81,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           
           {/* Desktop Nav */}
           <nav className="hidden md:flex space-x-4 items-center">
-            <NavItem to="/" icon={<Palette className="h-5 w-5" />} label="Gallery" />
+            <NavItem to="/" icon={<Home className="h-5 w-5" />} label="Início" />
             {isAuthenticated && (
               <>
-                <NavItem to="/profile" icon={<User className="h-5 w-5" />} label="Profile" />
-                <NavItem to="/admin/new-obra" icon={<Plus className="h-5 w-5" />} label="Add Art" />
-                {showAdminLink && (
-                  <NavItem to="/admin/users" icon={<Users className="h-5 w-5" />} label="Admin Users" />
+                <NavItem to="/my-gallery" icon={<Palette className="h-5 w-5" />} label="Minhas Obras" />
+                <NavItem to="/profile" icon={<User className="h-5 w-5" />} label="Perfil" />
+                <NavItem to="/admin/new-obra" icon={<Plus className="h-5 w-5" />} label="Adicionar Obra" />
+                {profile?.admin && (
+                  <NavItem to="/admin/users" icon={<Users className="h-5 w-5" />} label="Admin Usuários" />
                 )}
                 <Button variant="ghost" size="sm" onClick={handleLogout}>
                   <LogOut className="h-5 w-5 mr-2" />
@@ -115,13 +115,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         {/* Mobile Nav */}
         {isMenuOpen && (
           <nav className="md:hidden border-t p-4 flex flex-col space-y-2 bg-white dark:bg-background">
-            <NavItem to="/" icon={<Palette className="h-5 w-5" />} label="Gallery" onClick={closeMenu} />
+            <NavItem to="/" icon={<Home className="h-5 w-5" />} label="Início" onClick={closeMenu} />
             {isAuthenticated && (
               <>
-                <NavItem to="/profile" icon={<User className="h-5 w-5" />} label="Profile" onClick={closeMenu} />
-                <NavItem to="/admin/new-obra" icon={<Plus className="h-5 w-5" />} label="Add Art" onClick={closeMenu} />
-                {showAdminLink && (
-                  <NavItem to="/admin/users" icon={<Users className="h-5 w-5" />} label="Admin Users" onClick={closeMenu} />
+                <NavItem to="/my-gallery" icon={<Palette className="h-5 w-5" />} label="Minhas Obras" onClick={closeMenu} />
+                <NavItem to="/profile" icon={<User className="h-5 w-5" />} label="Perfil" onClick={closeMenu} />
+                <NavItem to="/admin/new-obra" icon={<Plus className="h-5 w-5" />} label="Adicionar Obra" onClick={closeMenu} />
+                {profile?.admin && (
+                  <NavItem to="/admin/users" icon={<Users className="h-5 w-5" />} label="Admin Usuários" onClick={closeMenu} />
                 )}
                 <Button variant="ghost" size="sm" onClick={handleLogout} className="justify-start w-full">
                   <LogOut className="h-5 w-5 mr-2" />

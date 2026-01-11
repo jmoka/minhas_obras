@@ -91,6 +91,34 @@ export const updateArtistProfile = async (id: string, profileData: Partial<Omit<
   return data as UserProfile;
 };
 
+export const fetchAllPublicObras = async (): Promise<Obra[]> => {
+  const { data, error } = await supabase
+    .from("obras")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching all public obras:", error);
+    return [];
+  }
+  
+  return data as Obra[];
+};
+
+export const fetchAllArtists = async (): Promise<UserProfile[]> => {
+  const { data, error } = await supabase
+    .from("user")
+    .select("*")
+    .order("nome", { ascending: true });
+
+  if (error) {
+    console.error("Error fetching all artists:", error);
+    return [];
+  }
+  
+  return data as UserProfile[];
+};
+
 export const fetchObras = async (): Promise<Obra[]> => {
   const { data: { user } } = await supabase.auth.getUser();
 
