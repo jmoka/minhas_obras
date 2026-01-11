@@ -86,7 +86,6 @@ serve(async (req) => {
       );
     }
 
-    // NOVA LÓGICA: Verificar se o usuário possui obras
     const { count, error: countError } = await supabaseAnon
       .from("obras")
       .select("*", { count: "exact", head: true })
@@ -108,19 +107,38 @@ serve(async (req) => {
       );
     }
 
-    // Se não houver obras, prosseguir com a exclusão
-    console.log(`[${functionName}] Admin user ${currentUser.id} is deleting user ${userId} (no artworks found).`);
+    console.log(`[${functionName}] Admin user ${currentUser.id} is deleting user ${userId}.`);
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Step 1: Attempt to delete from auth.users
     const { error: deleteAuthError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
-    if (deleteAuthError) {
+    // If the user is not found in auth, it's an orphan record. We can ignore this specific error.
+    if (deleteAuthError && !deleteAuthError.message.includes("User not found")) {
       console.error(`[${functionName}] Error deleting auth user:`, deleteAuthError.message);
       return new Response(JSON.stringify({ error: deleteAuthError.message }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    
+    if (deleteAuthError?.message.includes("User not found")) {
+      console.warn(`[${functionName}] User ${userId} not found in auth.users. This is an orphan record. Proceeding to clean up public.user.`);
+    }
+
+    // Step 2: Always attempt to delete from public.user to ensure cleanup
+    const { error: deleteProfileError } = await supabaseAdmin
+      .from("user")
+      .delete()
+      .eq("id", userId);
+
+    if (deleteProfileError) {
+      console.error(`[${functionName}] Error deleting profile from public.user:`, deleteProfileError.message);
+      return new Response(JSON.stringify({ error: `Failed to delete user profile: ${deleteProfileError.message}` }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
