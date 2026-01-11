@@ -12,6 +12,7 @@ interface ObraCardProps {
 const ObraCard: React.FC<ObraCardProps> = ({ obra }) => {
   const imageUrl = getPublicUrl(obra.img);
   const artistPhotoUrl = getPublicUrl(obra.user?.foto);
+  const ownerPhotoUrl = getPublicUrl(obra.foto_dono);
   
   const creationDate = obra.data_criacao ? new Date(obra.data_criacao).toLocaleDateString('pt-BR') : 'Data Desconhecida';
 
@@ -40,24 +41,45 @@ const ObraCard: React.FC<ObraCardProps> = ({ obra }) => {
           <p className="text-sm text-muted-foreground mb-4">Criada em: {creationDate}</p>
         </Link>
         
-        {/* Artist Info */}
+        {/* Artist & Owner Info */}
         <div className="mt-auto pt-4 border-t">
-          {obra.user && (
-            <Link to={`/artist/${obra.user.id}`} className="flex items-center space-x-3 group/artist">
-              <Avatar className="h-10 w-10">
-                <AvatarImage src={artistPhotoUrl} alt={obra.user.nome || "Artista"} />
-                <AvatarFallback>
-                  <User className="h-5 w-5" />
-                </AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="text-xs text-muted-foreground">Artista</p>
-                <p className="text-sm font-medium text-gray-800 dark:text-gray-200 group-hover/artist:text-teal-600 transition-colors">
-                  {obra.user.nome || "Artista Desconhecido"}
-                </p>
+          <div className="flex items-center flex-wrap gap-x-6 gap-y-2">
+            {/* Artist Info */}
+            {obra.user && (
+              <Link to={`/artist/${obra.user.id}`} className="flex items-center space-x-3 group/artist">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={artistPhotoUrl} alt={obra.user.nome || "Artista"} />
+                  <AvatarFallback>
+                    <User className="h-5 w-5" />
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="text-xs text-muted-foreground">Artista</p>
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200 group-hover/artist:text-teal-600 transition-colors">
+                    {obra.user.nome || "Artista Desconhecido"}
+                  </p>
+                </div>
+              </Link>
+            )}
+            
+            {/* Owner Info */}
+            {obra.nome_dono && (
+              <div className="flex items-center space-x-3">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={ownerPhotoUrl} alt={obra.nome_dono || "Proprietário"} />
+                  <AvatarFallback>
+                    <User className="h-5 w-5" />
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="text-xs text-muted-foreground">Proprietário</p>
+                  <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
+                    {obra.nome_dono}
+                  </p>
+                </div>
               </div>
-            </Link>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
