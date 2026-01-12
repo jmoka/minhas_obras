@@ -19,6 +19,8 @@ import AdminAnalytics from "./pages/AdminAnalytics";
 import AuthPage from "./pages/AuthPage";
 import ArtistPublicPage from "./pages/ArtistPublicPage";
 import WelcomePage from "./pages/WelcomePage";
+import ForumPage from "./pages/ForumPage";
+import TopicPage from "./pages/TopicPage";
 
 const queryClient = new QueryClient();
 
@@ -67,6 +69,16 @@ const App = () => (
               <Route path="/profile" element={
                 <ProtectedRoute requireUnblocked={true}>
                   <ArtistProfilePage />
+                </ProtectedRoute>
+              } />
+              <Route path="/forum" element={
+                <ProtectedRoute requireUnblocked={true}>
+                  <ForumPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/forum/:topicId" element={
+                <ProtectedRoute requireUnblocked={true}>
+                  <TopicPage />
                 </ProtectedRoute>
               } />
               

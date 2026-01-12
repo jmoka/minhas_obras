@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Palette, User, Plus, Users, LogIn, LogOut, Menu, X, Home, AlertCircle } from "lucide-react";
+import { Palette, User, Plus, Users, LogIn, LogOut, Menu, X, Home, AlertCircle, MessageSquare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -124,6 +124,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             {isAuthenticated && (
               <>
                 <NavItem 
+                  to="/forum" 
+                  icon={<MessageSquare className="h-5 w-5" />} 
+                  label="Fórum"
+                  onClick={(e) => {
+                    if (profile?.bloc) {
+                      e.preventDefault();
+                      showError('💬 Para acessar o fórum, sua conta precisa ser aprovada.');
+                      navigate('/welcome');
+                    }
+                  }}
+                />
+                <NavItem 
                   to="/my-gallery" 
                   icon={<Palette className="h-5 w-5" />} 
                   label="Minhas Obras"
@@ -190,6 +202,21 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <NavItem to="/" icon={<Home className="h-5 w-5" />} label="Início" onClick={closeMenu} />
             {isAuthenticated && (
               <>
+                <NavItem 
+                  to="/forum" 
+                  icon={<MessageSquare className="h-5 w-5" />} 
+                  label="Fórum" 
+                  onClick={(e) => {
+                    if (profile?.bloc) {
+                      e.preventDefault();
+                      showError('💬 Para acessar o fórum, sua conta precisa ser aprovada.');
+                      navigate('/welcome');
+                      closeMenu();
+                    } else {
+                      closeMenu();
+                    }
+                  }}
+                />
                 <NavItem 
                   to="/my-gallery" 
                   icon={<Palette className="h-5 w-5" />} 
