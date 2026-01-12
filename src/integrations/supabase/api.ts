@@ -642,6 +642,28 @@ export const fetchAnalysisHistory = async () => {
   return data;
 };
 
+export const deleteAnalysis = async (analysisId: string, imageUrl: string) => {
+  // First, delete the image from storage.
+  const { error: storageError } = await supabase.storage
+    .from(BUCKET_NAME)
+    .remove([imageUrl]);
+
+  if (storageError) {
+    console.warn(`Could not delete image from storage, but proceeding: ${storageError.message}`);
+  }
+
+  // Then, delete the record from the database.
+  const { error: dbError } = await supabase
+    .from("obra_analysis")
+    .delete()
+    .eq("id", analysisId);
+
+  if (dbError) {
+    console.error("Error deleting analysis:", dbError);
+    throw new Error("Não foi possível deletar a análise.");
+  }
+};
+
 // Settings Functions
 export const getSetting = async (key: string): Promise<string | null> => {
   const { data, error } = await supabase

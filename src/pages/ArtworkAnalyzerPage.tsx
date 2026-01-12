@@ -3,14 +3,24 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { analyzeArtwork, fetchAnalysisHistory, getPublicUrl } from "@/integrations/supabase/api";
+import { analyzeArtwork, fetchAnalysisHistory, getPublicUrl, deleteAnalysis } from "@/integrations/supabase/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Upload, Sparkles, Lightbulb, Palette, MessageSquare, History, Image as ImageIcon } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Upload, Sparkles, Lightbulb, Palette, MessageSquare, History, Image as ImageIcon, Trash2 } from "lucide-react";
 import { showSuccess, showError } from "@/utils/toast";
 
 const formSchema = z.object({
@@ -23,6 +33,7 @@ const ArtworkAnalyzerPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [latestAnalysis, setLatestAnalysis] = useState<any>(null);
+  const [deletingAnalysis, setDeletingAnalysis] = useState<any | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -45,6 +56,19 @@ const ArtworkAnalyzerPage: React.FC = () => {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (analysis: { id: string; image_url: string }) => deleteAnalysis(analysis.id, analysis.image_url),
+    onSuccess: () => {
+      showSuccess("Análise deletada com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["analysisHistory"] });
+      setDeletingAnalysis(null);
+    },
+    onError: (error) => {
+      showError(`Erro ao deletar: ${error.message}`);
+      setDeletingAnalysis(null);
+    },
+  });
+
   const onSubmit = (values: FormValues) => {
     analysisMutation.mutate(values.image);
   };
@@ -58,6 +82,12 @@ const ArtworkAnalyzerPage: React.FC = () => {
         setSelectedImage(reader.result as string);
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deletingAnalysis) {
+      deleteMutation.mutate(deletingAnalysis);
     }
   };
 
@@ -179,12 +209,23 @@ const ArtworkAnalyzerPage: React.FC = () => {
             ) : history && history.length > 0 ? (
               <div className="space-y-4">
                 {history.map((item: any) => (
-                  <div key={item.id} className="flex items-center gap-4 p-3 border rounded-lg">
+                  <div key={item.id} className="group flex items-center gap-4 p-3 border rounded-lg hover:bg-gray-50/50 transition-colors">
                     <img src={getPublicUrl(item.image_url)} alt="Obra analisada" className="h-16 w-16 object-cover rounded-md" />
                     <div className="flex-grow">
                       <p className="font-semibold">{item.suggested_title || "Análise"}</p>
                       <p className="text-sm text-muted-foreground">{new Date(item.created_at).toLocaleString('pt-BR')}</p>
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeletingAnalysis(item);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
                   </div>
                 ))}
               </div>
@@ -194,6 +235,27 @@ const ArtworkAnalyzerPage: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      <AlertDialog open={!!deletingAnalysis} onOpenChange={(open) => !open && setDeletingAnalysis(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tem certeza que deseja deletar esta análise?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita. A análise e a imagem associada serão permanentemente removidas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={deleteMutation.isPending}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteMutation.isPending ? "Deletando..." : "Deletar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
