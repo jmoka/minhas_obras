@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { analyzeArtwork, fetchAnalysisHistory, getPublicUrl, deleteAnalysis } from "@/integrations/supabase/api";
+import { analyzeArtwork, fetchAnalysisHistory, getPublicUrl, deleteAnalysis, getSetting } from "@/integrations/supabase/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,8 +20,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Upload, Sparkles, Lightbulb, Palette, MessageSquare, History, Image as ImageIcon, Trash2 } from "lucide-react";
+import { Upload, Sparkles, Lightbulb, Palette, MessageSquare, History, Image as ImageIcon, Trash2, AlertCircle } from "lucide-react";
 import { showSuccess, showError } from "@/utils/toast";
+import { Link } from "react-router-dom";
 
 const formSchema = z.object({
   image: z.instanceof(File).refine(file => file.size > 0, "Por favor, selecione uma imagem."),
@@ -37,6 +38,11 @@ const ArtworkAnalyzerPage: React.FC = () => {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
+  });
+
+  const { data: webhookUrl, isLoading: isLoadingUrl } = useQuery({
+    queryKey: ["settings", "n8n_webhook_url"],
+    queryFn: () => getSetting("n8n_webhook_url"),
   });
 
   const { data: history, isLoading: isLoadingHistory } = useQuery({
@@ -113,36 +119,52 @@ const ArtworkAnalyzerPage: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <FormField
-                    control={form.control}
-                    name="image"
-                    render={() => (
-                      <FormItem>
-                        <FormLabel>Arquivo de Imagem</FormLabel>
-                        <FormControl>
-                          <Input type="file" accept="image/*" onChange={handleFileChange} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
+              {isLoadingUrl ? (
+                <Skeleton className="h-40 w-full" />
+              ) : !webhookUrl ? (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Configuração Necessária</AlertTitle>
+                  <AlertDescription>
+                    A URL do webhook de análise não está configurada. Por favor, vá para a{" "}
+                    <Link to="/admin/settings" className="font-bold underline">
+                      página de configurações
+                    </Link>{" "}
+                    para adicioná-la.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                    <FormField
+                      control={form.control}
+                      name="image"
+                      render={() => (
+                        <FormItem>
+                          <FormLabel>Arquivo de Imagem</FormLabel>
+                          <FormControl>
+                            <Input type="file" accept="image/*" onChange={handleFileChange} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    {selectedImage && (
+                      <div className="mt-4">
+                        <img src={selectedImage} alt="Pré-visualização" className="max-h-64 w-auto mx-auto rounded-lg" />
+                      </div>
                     )}
-                  />
-                  {selectedImage && (
-                    <div className="mt-4">
-                      <img src={selectedImage} alt="Pré-visualização" className="max-h-64 w-auto mx-auto rounded-lg" />
-                    </div>
-                  )}
-                  <Button type="submit" className="w-full" disabled={analysisMutation.isPending}>
-                    {analysisMutation.isPending ? "Analisando..." : (
-                      <>
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        Analisar Obra
-                      </>
-                    )}
-                  </Button>
-                </form>
-              </Form>
+                    <Button type="submit" className="w-full" disabled={analysisMutation.isPending || !webhookUrl}>
+                      {analysisMutation.isPending ? "Analisando..." : (
+                        <>
+                          <Sparkles className="mr-2 h-4 w-4" />
+                          Analisar Obra
+                        </>
+                      )}
+                    </Button>
+                  </form>
+                </Form>
+              )}
             </CardContent>
           </Card>
 
