@@ -1,18 +1,26 @@
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Palette, User, Plus, Users, LogIn, LogOut, Menu, X, Home } from "lucide-react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Palette, User, Plus, Users, LogIn, LogOut, Menu, X, Home, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { showSuccess } from "@/utils/toast";
 import { useQuery } from "@tanstack/react-query";
 import { fetchArtistProfile } from "@/integrations/supabase/api";
+import { getBlockedMessage } from "@/utils/blockedUserMessages";
+import { showError } from "@/utils/toast";
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
-const NavItem: React.FC<{ to: string; icon: React.ReactNode; label: string; onClick?: () => void }> = ({ to, icon, label, onClick }) => (
+const NavItem: React.FC<{ 
+  to: string; 
+  icon: React.ReactNode; 
+  label: string; 
+  onClick?: (e: React.MouseEvent) => void 
+}> = ({ to, icon, label, onClick }) => (
   <Link
     to={to}
     onClick={onClick}
@@ -25,8 +33,25 @@ const NavItem: React.FC<{ to: string; icon: React.ReactNode; label: string; onCl
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // Lista de rotas permitidas para usuários bloqueados
+  const allowedRoutesForBlocked = [
+    '/',
+    '/welcome',
+    '/auth',
+    '/obras',
+    '/artist'
+  ];
+
+  // Função para verificar se rota é permitida
+  const isRouteAllowed = (pathname: string): boolean => {
+    return allowedRoutesForBlocked.some(route => 
+      pathname === route || pathname.startsWith(route + '/')
+    );
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -55,17 +80,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     enabled: isAuthenticated,
   });
 
-  if (isAuthenticated && profile?.bloc) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="max-w-md p-6 text-center space-y-4 border rounded-lg">
-          <h1 className="text-xl font-semibold">Conta bloqueada</h1>
-          <p>Sua conta está bloqueada. Entre em contato com o administrador.</p>
-          <Button onClick={handleLogout}>Sair</Button>
-        </div>
-      </div>
-    );
-  } 
+  // Middleware global: Redirecionar usuários bloqueados para /welcome
+  useEffect(() => {
+    if (isAuthenticated && profile?.bloc) {
+      const currentPath = location.pathname;
+      
+      if (!isRouteAllowed(currentPath)) {
+        console.log('[Layout] Usuário bloqueado tentou acessar:', currentPath);
+        const message = getBlockedMessage(currentPath);
+        showError(message);
+        navigate('/welcome', { replace: true });
+      }
+    }
+  }, [isAuthenticated, profile, location.pathname, navigate]); 
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const closeMenu = () => setIsMenuOpen(false);
@@ -75,18 +102,63 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Header/Navigation */}
       <header className="sticky top-0 z-10 border-b bg-white/80 backdrop-blur-sm dark:bg-background/80">
         <div className="container mx-auto flex justify-between items-center p-4">
-          <Link to="/" className="flex items-center" onClick={closeMenu}>
-            <img src="/logo.png" alt="Art Gallery" className="h-14 w-auto" />
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link to="/" className="flex items-center" onClick={closeMenu}>
+              <img src="/logo.png" alt="Art Gallery" className="h-14 w-auto" />
+            </Link>
+            
+            {isAuthenticated && profile?.bloc && (
+              <Badge 
+                variant="outline" 
+                className="hidden sm:flex bg-yellow-100 text-yellow-800 border-yellow-300 gap-1 animate-pulse"
+              >
+                <AlertCircle className="h-3 w-3" />
+                Conta Pendente de Aprovação
+              </Badge>
+            )}
+          </div>
           
           {/* Desktop Nav */}
           <nav className="hidden md:flex space-x-4 items-center">
             <NavItem to="/" icon={<Home className="h-5 w-5" />} label="Início" />
             {isAuthenticated && (
               <>
-                <NavItem to="/my-gallery" icon={<Palette className="h-5 w-5" />} label="Minhas Obras" />
-                <NavItem to="/profile" icon={<User className="h-5 w-5" />} label="Perfil" />
-                <NavItem to="/admin/new-obra" icon={<Plus className="h-5 w-5" />} label="Adicionar Obra" />
+                <NavItem 
+                  to="/my-gallery" 
+                  icon={<Palette className="h-5 w-5" />} 
+                  label="Minhas Obras"
+                  onClick={(e) => {
+                    if (profile?.bloc) {
+                      e.preventDefault();
+                      showError('🎨 Para criar e gerenciar suas obras, solicite a aprovação da sua conta primeiro!');
+                      navigate('/welcome');
+                    }
+                  }}
+                />
+                <NavItem 
+                  to="/profile" 
+                  icon={<User className="h-5 w-5" />} 
+                  label="Perfil"
+                  onClick={(e) => {
+                    if (profile?.bloc) {
+                      e.preventDefault();
+                      showError('👤 Para editar seu perfil, você precisa de aprovação. Clique no botão do WhatsApp!');
+                      navigate('/welcome');
+                    }
+                  }}
+                />
+                <NavItem 
+                  to="/admin/new-obra" 
+                  icon={<Plus className="h-5 w-5" />} 
+                  label="Adicionar Obra"
+                  onClick={(e) => {
+                    if (profile?.bloc) {
+                      e.preventDefault();
+                      showError('➕ Para adicionar obras, sua conta precisa ser aprovada pelo administrador.');
+                      navigate('/welcome');
+                    }
+                  }}
+                />
                 {profile?.admin && (
                   <NavItem to="/admin/users" icon={<Users className="h-5 w-5" />} label="Admin Usuários" />
                 )}
@@ -118,9 +190,51 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <NavItem to="/" icon={<Home className="h-5 w-5" />} label="Início" onClick={closeMenu} />
             {isAuthenticated && (
               <>
-                <NavItem to="/my-gallery" icon={<Palette className="h-5 w-5" />} label="Minhas Obras" onClick={closeMenu} />
-                <NavItem to="/profile" icon={<User className="h-5 w-5" />} label="Perfil" onClick={closeMenu} />
-                <NavItem to="/admin/new-obra" icon={<Plus className="h-5 w-5" />} label="Adicionar Obra" onClick={closeMenu} />
+                <NavItem 
+                  to="/my-gallery" 
+                  icon={<Palette className="h-5 w-5" />} 
+                  label="Minhas Obras" 
+                  onClick={(e) => {
+                    if (profile?.bloc) {
+                      e.preventDefault();
+                      showError('🎨 Para criar e gerenciar suas obras, solicite a aprovação da sua conta primeiro!');
+                      navigate('/welcome');
+                      closeMenu();
+                    } else {
+                      closeMenu();
+                    }
+                  }}
+                />
+                <NavItem 
+                  to="/profile" 
+                  icon={<User className="h-5 w-5" />} 
+                  label="Perfil" 
+                  onClick={(e) => {
+                    if (profile?.bloc) {
+                      e.preventDefault();
+                      showError('👤 Para editar seu perfil, você precisa de aprovação. Clique no botão do WhatsApp!');
+                      navigate('/welcome');
+                      closeMenu();
+                    } else {
+                      closeMenu();
+                    }
+                  }}
+                />
+                <NavItem 
+                  to="/admin/new-obra" 
+                  icon={<Plus className="h-5 w-5" />} 
+                  label="Adicionar Obra" 
+                  onClick={(e) => {
+                    if (profile?.bloc) {
+                      e.preventDefault();
+                      showError('➕ Para adicionar obras, sua conta precisa ser aprovada pelo administrador.');
+                      navigate('/welcome');
+                      closeMenu();
+                    } else {
+                      closeMenu();
+                    }
+                  }}
+                />
                 {profile?.admin && (
                   <NavItem to="/admin/users" icon={<Users className="h-5 w-5" />} label="Admin Usuários" onClick={closeMenu} />
                 )}

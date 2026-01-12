@@ -12,7 +12,7 @@
 - `descricao` (text) - Biografia
 - `foto` (text) - Caminho da foto no Storage
 - `admin` (boolean) - Flag de administrador
-- `bloc` (boolean) - Flag de bloqueio
+- `bloc` (boolean) - **Flag de bloqueio (padrão: true)** - Novos usuários requerem aprovação
 
 #### `obras` (Obras de Arte)
 - `id` (bigint, PK)
@@ -48,6 +48,31 @@ imgs (Galeria)
 - **Edição/Exclusão**: Apenas proprietário ou admin
 
 ## 🚀 Configuração Inicial
+
+### ⚠️ IMPORTANTE: Sistema de Aprovação de Usuários
+
+**Novos usuários são bloqueados por padrão** e precisam de aprovação do admin.
+
+📖 **Guia completo**: [docs/USER_APPROVAL_SYSTEM.md](./docs/USER_APPROVAL_SYSTEM.md)
+
+**Configuração rápida**:
+
+1. Edite `.env` e configure o WhatsApp do admin:
+   ```env
+   VITE_ADMIN_WHATSAPP=+5511999999999
+   ```
+
+2. Execute a migration no Supabase SQL Editor:
+   ```sql
+   -- Cole: supabase/migrations/20260112_set_default_blocked.sql
+   ```
+
+3. Para aprovar usuários:
+   ```sql
+   UPDATE "user" SET bloc = false WHERE email = 'usuario@email.com';
+   ```
+
+---
 
 ### ⚠️ IMPORTANTE: Correção de Autenticação
 
@@ -119,10 +144,26 @@ pnpm dev
 
 ## 📝 Fluxos de Uso
 
-### Cadastro de Novo Usuário
+### Cadastro e Aprovação de Novo Usuário
 1. Usuário faz signup na tela de registro
-2. Trigger cria automaticamente perfil na tabela `user`
-3. Usuário pode editar perfil após login
+2. Trigger cria automaticamente perfil na tabela `user` com **`bloc = true`** (bloqueado)
+3. Usuário é redirecionado para **página de boas-vindas** (`/welcome`)
+4. Na página de boas-vindas:
+   - Mensagem personalizada de boas-vindas
+   - Botão para solicitar desbloqueio via WhatsApp
+   - Lista do que pode fazer enquanto aguarda aprovação
+5. Admin recebe solicitação via WhatsApp
+6. Admin aprova usuário (altera `bloc = false`)
+7. Usuário ganha acesso completo à plataforma
+
+**Acessos durante bloqueio**:
+- ✅ Visualizar galeria pública
+- ✅ Ver detalhes de obras
+- ✅ Visualizar perfis de artistas
+- ❌ Criar/editar obras (requer aprovação)
+- ❌ Acessar perfil próprio (requer aprovação)
+
+📖 **Guia detalhado**: [docs/USER_APPROVAL_SYSTEM.md](./docs/USER_APPROVAL_SYSTEM.md)
 
 ### Recuperação de Senha
 1. Usuário acessa `/auth` e clica na aba "**Recuperar**"
@@ -213,6 +254,12 @@ Para verificar se tudo está funcionando:
    - Clicar no link e aguardar spinner
    - Atualizar senha com sucesso
    - Fazer login com nova senha
+7. **Sistema de aprovação de usuários** (✅ implementado):
+   - Criar novo usuário via signup
+   - Verificar redirecionamento para `/welcome`
+   - Testar botão de solicitação via WhatsApp
+   - Aprovar usuário no banco de dados
+   - Verificar acesso liberado
 
 ## 🐛 Troubleshooting
 
@@ -245,6 +292,14 @@ Para verificar se tudo está funcionando:
 - ✅ Fallback automático registra visita sem dados de geo
 - ✅ Execução em background não bloqueia autenticação ou navegação
 
+### Usuário não consegue acessar funcionalidades após cadastro
+**Comportamento esperado!** Novos usuários precisam de aprovação:
+- ✅ Usuário é bloqueado por padrão (`bloc = true`)
+- ✅ Deve solicitar desbloqueio via WhatsApp na página `/welcome`
+- ✅ Admin aprova executando: `UPDATE "user" SET bloc = false WHERE id = 'user_id';`
+- ✅ Após aprovação, usuário tem acesso completo
+- 📖 Veja: [docs/USER_APPROVAL_SYSTEM.md](./docs/USER_APPROVAL_SYSTEM.md)
+
 ## 📞 Suporte
 
 Para dúvidas ou problemas:
@@ -256,7 +311,39 @@ Para dúvidas ou problemas:
 
 **Última atualização**: 2026-01-12
 
-## 🎉 Correções Recentes
+## 🎉 Correções e Implementações Recentes
+
+### v1.2.0 - Sistema de Aprovação de Usuários (2026-01-12)
+
+✅ **Nova funcionalidade**: Novos usuários precisam de aprovação do admin
+
+**Implementações:**
+- Página de boas-vindas (`/welcome`) com design atraente
+- Botão de solicitação de desbloqueio via WhatsApp
+- Middleware de proteção de rotas (`ProtectedRoute`)
+- Usuários bloqueados podem ver galeria pública mas não podem criar obras
+- Redirecionamento automático após aprovação
+- Script SQL para alterar comportamento padrão (`bloc = true`)
+
+**Arquivos criados:**
+- `src/pages/WelcomePage.tsx` - Página de boas-vindas
+- `src/components/ProtectedRoute.tsx` - Proteção de rotas
+- `supabase/migrations/20260112_set_default_blocked.sql` - Migration
+- `docs/USER_APPROVAL_SYSTEM.md` - Documentação completa
+
+**Arquivos modificados:**
+- `src/App.tsx` - Rotas protegidas
+- `src/pages/AuthPage.tsx` - Fluxo de signup e login
+- `.env` - Variável `VITE_ADMIN_WHATSAPP`
+
+**Configuração necessária:**
+```env
+VITE_ADMIN_WHATSAPP=+5511999999999  # Substitua pelo número real
+```
+
+📖 **Documentação completa**: [docs/USER_APPROVAL_SYSTEM.md](./docs/USER_APPROVAL_SYSTEM.md)
+
+---
 
 ### v1.1.0 - Correção de Recuperação de Senha (2026-01-12)
 

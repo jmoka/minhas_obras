@@ -149,7 +149,7 @@ const AuthPage: React.FC = () => {
     const loadingToastId = showLoading("Fazendo login...");
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: values.email,
         password: values.password,
       });
@@ -158,7 +158,21 @@ const AuthPage: React.FC = () => {
 
       dismissToast(loadingToastId);
       showSuccess("Login realizado com sucesso!");
-      navigate("/profile");
+      
+      // Verificar se o usuário está bloqueado
+      if (data.user) {
+        const { data: profile } = await supabase
+          .from("user")
+          .select("bloc")
+          .eq("id", data.user.id)
+          .single();
+        
+        if (profile?.bloc) {
+          navigate("/welcome");
+        } else {
+          navigate("/profile");
+        }
+      }
     } catch (error) {
       dismissToast(loadingToastId);
       showError(`Erro ao fazer login: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
@@ -173,7 +187,7 @@ const AuthPage: React.FC = () => {
     const loadingToastId = showLoading("Criando conta...");
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: values.email,
         password: values.password,
         options: {
@@ -186,8 +200,13 @@ const AuthPage: React.FC = () => {
       if (error) throw error;
 
       dismissToast(loadingToastId);
-      showSuccess("Conta criada com sucesso! Você já pode fazer login.");
+      showSuccess("Conta criada com sucesso! Bem-vindo à plataforma!");
       signupForm.reset();
+      
+      // Redirecionar imediatamente para página de boas-vindas
+      if (data.user) {
+        navigate("/welcome", { replace: true });
+      }
     } catch (error) {
       dismissToast(loadingToastId);
       showError(`Erro ao criar conta: ${error instanceof Error ? error.message : "Erro desconhecido"}`);

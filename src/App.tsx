@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 import RecoveryDetector from "./components/RecoveryDetector";
+import ProtectedRoute from "./components/ProtectedRoute";
 import { TrackingProvider } from "./components/TrackingProvider";
 import PublicGallery from "./pages/PublicGallery";
 import MyGallery from "./pages/MyGallery";
@@ -17,6 +18,7 @@ import AdminUserManagement from "./pages/AdminUserManagement";
 import AdminAnalytics from "./pages/AdminAnalytics";
 import AuthPage from "./pages/AuthPage";
 import ArtistPublicPage from "./pages/ArtistPublicPage";
+import WelcomePage from "./pages/WelcomePage";
 
 const queryClient = new QueryClient();
 
@@ -31,15 +33,43 @@ const App = () => (
           <Layout>
             <Routes>
               <Route path="/" element={<PublicGallery />} />
-              <Route path="/my-gallery" element={<MyGallery />} />
               <Route path="/auth" element={<AuthPage />} />
+              <Route path="/welcome" element={<WelcomePage />} />
               <Route path="/obras/:id" element={<ObraDetail />} />
-              <Route path="/admin/new-obra" element={<AdminNewObra />} />
-              <Route path="/admin/edit-obra/:id" element={<AdminEditObra />} />
-              <Route path="/admin/users" element={<AdminUserManagement />} />
-              <Route path="/admin/analytics" element={<AdminAnalytics />} />
-              <Route path="/profile" element={<ArtistProfilePage />} />
               <Route path="/artist/:userId" element={<ArtistPublicPage />} />
+              
+              {/* Rotas protegidas - requerem usuário desbloqueado */}
+              <Route path="/my-gallery" element={
+                <ProtectedRoute requireUnblocked={true}>
+                  <MyGallery />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/new-obra" element={
+                <ProtectedRoute requireUnblocked={true}>
+                  <AdminNewObra />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/edit-obra/:id" element={
+                <ProtectedRoute requireUnblocked={true}>
+                  <AdminEditObra />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/users" element={
+                <ProtectedRoute requireUnblocked={true}>
+                  <AdminUserManagement />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin/analytics" element={
+                <ProtectedRoute requireUnblocked={true}>
+                  <AdminAnalytics />
+                </ProtectedRoute>
+              } />
+              <Route path="/profile" element={
+                <ProtectedRoute requireUnblocked={true}>
+                  <ArtistProfilePage />
+                </ProtectedRoute>
+              } />
+              
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Layout>

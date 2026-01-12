@@ -5,11 +5,12 @@ import ObraCard from "@/components/ObraCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Palette, Search, X as XIcon } from "lucide-react";
+import { User, Palette, Search, X as XIcon, Shield } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 const PublicGallery: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -69,12 +70,23 @@ const PublicGallery: React.FC = () => {
           <div className="flex space-x-4 overflow-x-auto pb-4">
             {artists?.map((artist) => (
               <Link to={`/artist/${artist.id}`} key={artist.id} className="text-center group">
-                <Avatar className="h-24 w-24 border-4 border-white shadow-lg group-hover:border-teal-400 transition-colors">
-                  <AvatarImage src={getPublicUrl(artist.foto)} alt={artist.nome || "Artista"} />
-                  <AvatarFallback>
-                    <User className="h-10 w-10 text-stone-400" />
-                  </AvatarFallback>
-                </Avatar>
+                <div className="relative">
+                  <Avatar className="h-24 w-24 border-4 border-white shadow-lg group-hover:border-teal-400 transition-colors">
+                    <AvatarImage src={getPublicUrl(artist.foto)} alt={artist.nome || "Artista"} />
+                    <AvatarFallback>
+                      <User className="h-10 w-10 text-stone-400" />
+                    </AvatarFallback>
+                  </Avatar>
+                  {artist.admin && (
+                    <Badge 
+                      variant="default" 
+                      className="absolute -top-1 -right-1 h-7 w-7 rounded-full p-0 flex items-center justify-center bg-gradient-to-br from-amber-500 to-orange-600 border-2 border-white shadow-md"
+                      title="Administrador"
+                    >
+                      <Shield className="h-4 w-4 text-white" />
+                    </Badge>
+                  )}
+                </div>
                 <p className="mt-2 text-sm font-medium text-stone-700 group-hover:text-teal-700 transition-colors truncate w-24">
                   {artist.nome || "Anônimo"}
                 </p>
