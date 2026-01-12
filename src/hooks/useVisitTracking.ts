@@ -46,9 +46,20 @@ export const useVisitTracking = () => {
     const existingVisit = sessionStorage.getItem(`visit_recorded_${sessionId}`);
     
     if (!existingVisit) {
-      const geoData = await getIpAndGeolocation();
-      await recordSiteVisit(sessionId, geoData);
-      sessionStorage.setItem(`visit_recorded_${sessionId}`, "true");
+      // Executar geolocalização em background (não-bloqueante)
+      // Isso evita que erros de geolocalização bloqueiem outras funcionalidades
+      getIpAndGeolocation()
+        .then(geoData => {
+          return recordSiteVisit(sessionId, geoData);
+        })
+        .catch(error => {
+          console.warn("Erro ao obter geolocalização, registrando visita sem geo:", error);
+          // Fallback: registrar visita sem dados de geo
+          return recordSiteVisit(sessionId, { ip: "unknown", country: null, city: null });
+        })
+        .finally(() => {
+          sessionStorage.setItem(`visit_recorded_${sessionId}`, "true");
+        });
     }
 
     isTrackingRef.current = true;

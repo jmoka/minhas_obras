@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
+import RecoveryDetector from "./components/RecoveryDetector";
 import { TrackingProvider } from "./components/TrackingProvider";
 import PublicGallery from "./pages/PublicGallery";
 import MyGallery from "./pages/MyGallery";
@@ -25,6 +26,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <RecoveryDetector />
         <TrackingProvider>
           <Layout>
             <Routes>

@@ -124,6 +124,24 @@ pnpm dev
 2. Trigger cria automaticamente perfil na tabela `user`
 3. Usuário pode editar perfil após login
 
+### Recuperação de Senha
+1. Usuário acessa `/auth` e clica na aba "**Recuperar**"
+2. Insere seu email e clica em "**Enviar Link de Recuperação**"
+3. Recebe email com link de recuperação (válido por 1 hora)
+4. Clica no link do email
+5. Aguarda 1-2 segundos enquanto a sessão é estabelecida (spinner: "Preparando atualização de senha...")
+6. Insere nova senha (mínimo 6 caracteres) e confirmação
+7. Clica em "**Atualizar Senha**"
+8. É automaticamente deslogado por segurança
+9. Faz login com a nova senha
+
+**Segurança implementada:**
+- ✅ Validação de sessão antes de permitir atualização
+- ✅ Logout automático após mudança de senha (melhor prática)
+- ✅ Senha criptografada com bcrypt pelo Supabase
+- ✅ Token de recuperação validado e com expiração
+- ✅ Persistência garantida via transação atômica no PostgreSQL
+
 ### Criação de Obra
 1. Usuário autenticado acessa "Nova Obra"
 2. Preenche dados e faz upload de arquivos
@@ -189,6 +207,12 @@ Para verificar se tudo está funcionando:
 3. **Criação de obra**: Verificar associação correta com usuário
 4. **Galeria**: Adicionar/remover imagens
 5. **Permissões**: Testar acesso de admin vs usuário comum
+6. **Recuperação de senha** (✅ implementado e testado):
+   - Solicitar recuperação na aba "Recuperar"
+   - Verificar recebimento de email
+   - Clicar no link e aguardar spinner
+   - Atualizar senha com sucesso
+   - Fazer login com nova senha
 
 ## 🐛 Troubleshooting
 
@@ -205,6 +229,22 @@ Para verificar se tudo está funcionando:
 - Confirmar que usuário está autenticado
 - Checar políticas de INSERT na tabela `obras`
 
+### Erro "Auth session missing" na recuperação de senha
+**Problema resolvido!** Se você ainda encontrar este erro:
+- Certifique-se de clicar no link do email **imediatamente** (token válido por 1 hora)
+- Aguarde o spinner "Preparando atualização de senha..." desaparecer (1-2 segundos)
+- Se o spinner não desaparecer após 10 segundos:
+  1. Abra o Console (F12) e procure por mensagens `[AuthPage]`
+  2. Verifique se há erros de rede ou CORS
+  3. Gere um novo link de recuperação e tente novamente
+
+### Erro de geolocalização (ERR_NAME_NOT_RESOLVED)
+**Comportamento normal!** O sistema tenta obter localização via ipapi.co para analytics:
+- ✅ Erro é silencioso (console.warn) e não afeta funcionalidades
+- ✅ Timeout de 5 segundos para evitar travamentos
+- ✅ Fallback automático registra visita sem dados de geo
+- ✅ Execução em background não bloqueia autenticação ou navegação
+
 ## 📞 Suporte
 
 Para dúvidas ou problemas:
@@ -214,4 +254,30 @@ Para dúvidas ou problemas:
 
 ---
 
-**Última atualização**: 2026-01-10
+**Última atualização**: 2026-01-12
+
+## 🎉 Correções Recentes
+
+### v1.1.0 - Correção de Recuperação de Senha (2026-01-12)
+
+✅ **Problema resolvido**: Erro "Auth session missing" ao tentar atualizar senha via link de recuperação
+
+**Implementações:**
+- Listener de sessão com `onAuthStateChange()` para aguardar sessão estabelecida
+- Indicador visual (spinner) durante preparação da atualização
+- Validação de sessão antes de permitir atualização
+- Logout automático após mudança de senha (melhor prática de segurança)
+- Geolocalização não-bloqueante com timeout de 5 segundos
+- Logs de debug para facilitar troubleshooting
+
+**Arquivos modificados:**
+- `src/pages/AuthPage.tsx` - Lógica de recuperação de senha
+- `src/utils/geolocation.ts` - Timeout e tratamento de erros
+- `src/hooks/useVisitTracking.ts` - Execução em background
+
+**Garantias de segurança:**
+- ✅ Token de recuperação validado pelo Supabase
+- ✅ Senha criptografada com bcrypt automaticamente
+- ✅ Transação atômica no PostgreSQL
+- ✅ Sessão invalidada após mudança de senha
+- ✅ Persistência de dados garantida

@@ -8,13 +8,30 @@ interface CachedGeoData {
   timestamp: number;
 }
 
+async function fetchWithTimeout(url: string, timeout = 5000): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Request timeout');
+    }
+    throw error;
+  }
+}
+
 export async function getIpAddress(): Promise<string> {
   try {
-    const response = await fetch("https://api.ipify.org?format=json");
+    const response = await fetchWithTimeout("https://api.ipify.org?format=json", 5000);
     const data = await response.json();
     return data.ip || "unknown";
   } catch (error) {
-    console.error("Erro ao obter IP:", error);
+    console.warn("Erro ao obter IP:", error);
     return "unknown";
   }
 }
@@ -30,7 +47,7 @@ export async function getGeolocation(ip: string): Promise<GeoLocationData> {
   }
 
   try {
-    const response = await fetch(`https://ipapi.co/${ip}/json/`);
+    const response = await fetchWithTimeout(`https://ipapi.co/${ip}/json/`, 5000);
     
     if (!response.ok) {
       throw new Error("Falha na requisição de geolocalização");
@@ -47,7 +64,7 @@ export async function getGeolocation(ip: string): Promise<GeoLocationData> {
     cacheGeoData(geoData);
     return geoData;
   } catch (error) {
-    console.error("Erro ao obter geolocalização:", error);
+    console.warn("Erro ao obter geolocalização:", error);
     return { ip, country: null, city: null };
   }
 }
@@ -72,7 +89,7 @@ function getCachedGeoData(): CachedGeoData | null {
 
     return parsedCache;
   } catch (error) {
-    console.error("Erro ao ler cache de geolocalização:", error);
+    console.warn("Erro ao ler cache de geolocalização:", error);
     return null;
   }
 }
@@ -85,6 +102,6 @@ function cacheGeoData(data: GeoLocationData): void {
     };
     localStorage.setItem(GEO_CACHE_KEY, JSON.stringify(cacheData));
   } catch (error) {
-    console.error("Erro ao salvar cache de geolocalização:", error);
+    console.warn("Erro ao salvar cache de geolocalização:", error);
   }
 }
