@@ -1,5 +1,5 @@
 import { supabase } from "./client";
-import { Obra, UserProfile, Img, InsertImg, SiteVisit, ObraView, GeoLocationData } from "@/types/database";
+import { Obra, UserProfile, Img, InsertImg, SiteVisit, ObraView, GeoLocationData, ForumTopic, ForumMessage } from "@/types/database";
 
 const BUCKET_NAME = "art_gallery";
 
@@ -515,4 +515,97 @@ export const getArtistAnalytics = async (userId: string) => {
       viewDetails: [],
     };
   }
+};
+
+// Forum & Chat Functions
+
+/**
+ * Fetches all forum topics, including creator's profile info.
+ */
+export const fetchForumTopics = async (): Promise<ForumTopic[]> => {
+  const { data, error } = await supabase
+    .from("forum_topics")
+    .select("*, user:user!created_by(id, nome, foto)")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching forum topics:", error);
+    throw new Error("Não foi possível carregar os tópicos do fórum.");
+  }
+  return data as ForumTopic[];
+};
+
+/**
+ * Fetches a single topic by its ID, including creator's profile info.
+ */
+export const fetchTopicById = async (topicId: string): Promise<ForumTopic | null> => {
+    const { data, error } = await supabase
+        .from("forum_topics")
+        .select("*, user:user!created_by(id, nome, foto)")
+        .eq("id", topicId)
+        .single();
+
+    if (error) {
+        console.error(`Error fetching topic ${topicId}:`, error);
+        return null;
+    }
+    return data as ForumTopic;
+};
+
+
+/**
+ * Fetches all messages for a specific topic, including sender's profile info.
+ */
+export const fetchTopicMessages = async (topicId: string): Promise<ForumMessage[]> => {
+  const { data, error } = await supabase
+    .from("forum_messages")
+    .select("*, user:user!user_id(id, nome, foto)")
+    .eq("topic_id", topicId)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    console.error(`Error fetching messages for topic ${topicId}:`, error);
+    throw new Error("Não foi possível carregar as mensagens.");
+  }
+  return data as ForumMessage[];
+};
+
+/**
+ * Creates a new forum topic.
+ */
+export const createForumTopic = async (title: string, description: string | null): Promise<ForumTopic> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Usuário não autenticado.");
+
+  const { data, error } = await supabase
+    .from("forum_topics")
+    .insert({ title, description, created_by: user.id })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error creating forum topic:", error);
+    throw new Error("Não foi possível criar o tópico.");
+  }
+  return data as ForumTopic;
+};
+
+/**
+ * Creates a new message in a topic.
+ */
+export const createForumMessage = async (topicId: string, content: string): Promise<ForumMessage> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Usuário não autenticado.");
+
+  const { data, error } = await supabase
+    .from("forum_messages")
+    .insert({ topic_id: parseInt(topicId), content, user_id: user.id })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error creating forum message:", error);
+    throw new Error("Não foi possível enviar a mensagem.");
+  }
+  return data as ForumMessage;
 };

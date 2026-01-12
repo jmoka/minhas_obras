@@ -68,3 +68,29 @@ export interface GeoLocationData {
   country: string | null;
   city: string | null;
 }
+
+export interface ForumTopic {
+  id: number;
+  created_at: string;
+  title: string;
+  description: string | null;
+  created_by: string;
+  user: {
+    id: string;
+    nome: string | null;
+    foto: string | null;
+  } | null;
+}
+
+export interface ForumMessage {
+  id: number;
+  created_at: string;
+  content: string;
+  user_id: string;
+  topic_id: number;
+  user: {
+    id: string;
+    nome: string | null;
+    foto: string | null;
+  } | null;
+}
