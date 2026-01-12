@@ -15,6 +15,9 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Declarar filePath no escopo mais alto para que possa ser usado no bloco catch
+  let filePath = "";
+
   try {
     // 1. Autenticar o usuário
     const authHeader = req.headers.get("Authorization");
@@ -54,8 +57,8 @@ serve(async (req) => {
 
     // 4. Fazer upload da imagem para o Supabase Storage
     const file = await req.blob();
-    const fileExtension = file.type.split("/")[1];
-    const filePath = `analysis_images/${user.id}/${crypto.randomUUID()}.${fileExtension}`;
+    const fileExtension = file.type.split("/")[1] || 'png'; // Fallback para png
+    filePath = `analysis_images/${user.id}/${crypto.randomUUID()}.${fileExtension}`;
 
     const { error: uploadError } = await supabaseAdmin.storage
       .from(BUCKET_NAME)
@@ -99,7 +102,16 @@ serve(async (req) => {
 
     const analysisResult = await n8nResponse.json();
 
-    // 7. Salvar o resultado na tabela obra_analysis
+    // 7. Verificar se a resposta da IA é um erro de imagem inválida
+    if (analysisResult["Sugestão de Titulo"] === "Imagem Inválida para Análise") {
+      console.warn(`[${functionName}] n8n retornou um erro de imagem inválida para o usuário ${user.id}.`);
+      // Deleta a imagem inútil que foi enviada
+      await supabaseAdmin.storage.from(BUCKET_NAME).remove([filePath]);
+      // Lança um erro que será enviado de volta ao cliente
+      throw new Error("A IA não conseguiu processar o arquivo. Por favor, verifique se é uma imagem válida e tente novamente.");
+    }
+
+    // 8. Salvar o resultado na tabela obra_analysis
     const { data: savedAnalysis, error: insertError } = await supabaseAdmin
       .from("obra_analysis")
       .insert({
@@ -124,6 +136,14 @@ serve(async (req) => {
 
   } catch (error) {
     console.error(`[${functionName}] Erro:`, error.message);
+    // Se um arquivo foi enviado antes do erro, tenta deletá-lo
+    if (filePath) {
+      const supabaseAdmin = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      await supabaseAdmin.storage.from(BUCKET_NAME).remove([filePath]);
+    }
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
