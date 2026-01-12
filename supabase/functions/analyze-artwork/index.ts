@@ -102,6 +102,9 @@ serve(async (req) => {
 
     const analysisResult = await n8nResponse.json();
 
+    // Log da resposta recebida do n8n
+    console.log(`[${functionName}] Resposta recebida do webhook n8n para o usuário ${user.id}:`, JSON.stringify(analysisResult, null, 2));
+
     // 7. Verificar se a resposta da IA é um erro de imagem inválida
     if (analysisResult["Sugestão de Titulo"] === "Imagem Inválida para Análise") {
       console.warn(`[${functionName}] n8n retornou um erro de imagem inválida para o usuário ${user.id}.`);
