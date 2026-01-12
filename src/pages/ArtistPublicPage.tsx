@@ -1,15 +1,22 @@
-import React from "react";
+import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { getPublicUrl } from "@/integrations/supabase/api";
+import { getPublicUrl, getArtistAnalytics } from "@/integrations/supabase/api";
 import { UserProfile, Obra } from "@/types/database";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Card } from "@/components/ui/card";
-import { Calendar, Palette, Image } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Calendar, Palette, Image, Mail, MessageCircle, Eye, TrendingUp, MapPin, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 const ArtistPublicPage: React.FC = () => {
   const { userId } = useParams<{ userId: string }>();
+  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
 
   const { data: artist, isLoading: loadingArtist } = useQuery({
     queryKey: ["artist", userId],
@@ -46,6 +53,12 @@ const ArtistPublicPage: React.FC = () => {
 
       return data as Obra[];
     },
+    enabled: !!userId,
+  });
+
+  const { data: analytics } = useQuery({
+    queryKey: ["artist-analytics", userId],
+    queryFn: () => getArtistAnalytics(userId!),
     enabled: !!userId,
   });
 
@@ -106,6 +119,38 @@ const ArtistPublicPage: React.FC = () => {
             <Palette className="w-5 h-5" />
             <span>Artista Visual</span>
           </div>
+          
+          {/* Contact Buttons */}
+          {(artist.email || artist.whatsapp) && (
+            <div className="flex items-center gap-4 mt-6">
+              {artist.email && (
+                <Button
+                  asChild
+                  className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border-2 border-white/50 shadow-lg transition-all"
+                >
+                  <a href={`mailto:${artist.email}`} target="_blank" rel="noopener noreferrer">
+                    <Mail className="w-5 h-5 mr-2" />
+                    Email
+                  </a>
+                </Button>
+              )}
+              {artist.whatsapp && (
+                <Button
+                  asChild
+                  className="bg-green-500/90 hover:bg-green-600 text-white border-2 border-white/50 shadow-lg transition-all"
+                >
+                  <a 
+                    href={`https://wa.me/${artist.whatsapp.replace(/\D/g, '')}`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                  >
+                    <MessageCircle className="w-5 h-5 mr-2" />
+                    WhatsApp
+                  </a>
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -150,6 +195,119 @@ const ArtistPublicPage: React.FC = () => {
           <p className="text-lg text-gray-700 leading-relaxed whitespace-pre-wrap">
             {artist.descricao}
           </p>
+        </div>
+      )}
+
+      {/* Analytics Section */}
+      {analytics && analytics.totalViews > 0 && (
+        <div className="bg-gradient-to-br from-teal-50 to-blue-50 rounded-3xl p-10 shadow-lg">
+          <h2 className="text-3xl font-serif font-bold text-gray-800 mb-6 flex items-center gap-3">
+            <TrendingUp className="w-8 h-8 text-teal-600" />
+            Métricas do Artista
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <Card className="border-none shadow-md">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-teal-700 flex items-center gap-2">
+                  <Eye className="w-4 h-4" />
+                  Total de Visualizações
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-teal-900">{analytics.totalViews}</div>
+              </CardContent>
+            </Card>
+
+            {analytics.topObra && (
+              <Card className="border-none shadow-md">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-purple-700 flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4" />
+                    Obra Mais Vista
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Link to={`/obras/${analytics.topObra.obra.id}`} className="hover:underline">
+                    <p className="font-bold text-purple-900 truncate">{analytics.topObra.obra.titulo}</p>
+                    <p className="text-sm text-gray-600">{analytics.topObra.count} visualizações</p>
+                  </Link>
+                </CardContent>
+              </Card>
+            )}
+
+            <Card className="border-none shadow-md">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-blue-700 flex items-center gap-2">
+                  <MapPin className="w-4 h-4" />
+                  Top 3 Localidades
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-1">
+                  {analytics.topLocations.slice(0, 3).map((loc: any, idx: number) => (
+                    <p key={idx} className="text-sm text-gray-700">
+                      {idx + 1}. {loc.location} ({loc.count})
+                    </p>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Collapsible open={isAnalyticsOpen} onOpenChange={setIsAnalyticsOpen}>
+            <CollapsibleTrigger asChild>
+              <Button variant="outline" className="w-full flex items-center justify-center gap-2">
+                {isAnalyticsOpen ? (
+                  <>
+                    <ChevronUp className="w-4 h-4" />
+                    Ocultar Detalhes das Visualizações
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="w-4 h-4" />
+                    Ver Detalhes das Visualizações
+                  </>
+                )}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-6">
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {analytics.viewDetails.map((detail: any, idx: number) => (
+                  <Card key={idx} className="border-none shadow-sm hover:shadow-md transition-shadow">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-4">
+                        <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-100">
+                          {detail.obra?.img ? (
+                            <img
+                              src={getPublicUrl(detail.obra.img)}
+                              alt={detail.obra.titulo}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Image className="w-6 h-6 text-gray-400" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-grow">
+                          <p className="font-medium text-gray-900">{detail.obra?.titulo || "Sem título"}</p>
+                          <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-3 h-3" />
+                              {detail.location}
+                            </span>
+                            <span>IP: {detail.ip.substring(0, 10)}...</span>
+                            <span>{new Date(detail.date).toLocaleDateString("pt-BR")}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
         </div>
       )}
 

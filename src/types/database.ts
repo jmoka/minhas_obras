@@ -39,3 +39,32 @@ export interface InsertImg {
   obras_id: string;
   url: string;
 }
+
+export interface SiteVisit {
+  id: string;
+  created_at: string;
+  ip_address: string;
+  ip_hash: string | null;
+  session_id: string;
+  country: string | null;
+  city: string | null;
+  duration_seconds: number;
+  last_activity: string;
+}
+
+export interface ObraView {
+  id: string;
+  created_at: string;
+  obra_id: number;
+  ip_address: string;
+  session_id: string;
+  duration_seconds: number;
+  country: string | null;
+  city: string | null;
+}
+
+export interface GeoLocationData {
+  ip: string;
+  country: string | null;
+  city: string | null;
+}

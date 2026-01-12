@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchObraById, getPublicUrl } from "@/integrations/supabase/api";
@@ -25,12 +25,19 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { showSuccess, showError } from "@/utils/toast";
+import { useObraViewTracking } from "@/hooks/useObraViewTracking";
 
 const ObraDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const obraId = id;
   const navigate = useNavigate();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  useObraViewTracking(obraId);
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [obraId]);
 
   const { data: obra, isLoading, error } = useQuery({
     queryKey: ["obra", obraId],
@@ -119,37 +126,35 @@ const ObraDetail: React.FC = () => {
             )}
           </Card>
           
-          <div className={`grid gap-6 ${videoUrl && obra.descricao ? 'md:grid-cols-2' : 'grid-cols-1'}`}>
-            {videoUrl && (
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Card className="p-4 rounded-2xl border-none shadow-lg bg-white/80 backdrop-blur-sm cursor-pointer group h-full flex flex-col">
-                    <h2 className="text-lg md:text-xl font-semibold flex items-center mb-2 text-teal-700"><Video className="h-5 w-5 mr-2" /> Vídeo da Obra</h2>
-                    <div className="relative overflow-hidden rounded-lg flex-grow aspect-video">
-                      <img src={imageUrl} alt="Poster do vídeo" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
-                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                        <PlayCircle className="h-16 w-16 text-white/80 group-hover:text-white transition-all duration-300 group-hover:scale-110" />
-                      </div>
+          {videoUrl && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <Card className="p-4 rounded-2xl border-none shadow-lg bg-white/80 backdrop-blur-sm cursor-pointer group">
+                  <h2 className="text-lg md:text-xl font-semibold flex items-center mb-2 text-teal-700"><Video className="h-5 w-5 mr-2" /> Vídeo da Obra</h2>
+                  <div className="relative overflow-hidden rounded-lg aspect-video">
+                    <img src={imageUrl} alt="Poster do vídeo" className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                      <PlayCircle className="h-16 w-16 text-white/80 group-hover:text-white transition-all duration-300 group-hover:scale-110" />
                     </div>
-                  </Card>
-                </DialogTrigger>
-                <DialogContent className="max-w-4xl p-0 border-0 bg-transparent shadow-none">
-                  <video controls autoPlay src={videoUrl} className="w-full rounded-lg" />
-                </DialogContent>
-              </Dialog>
-            )}
+                  </div>
+                </Card>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl p-0 border-0 bg-transparent shadow-none">
+                <video controls autoPlay src={videoUrl} className="w-full rounded-lg" />
+              </DialogContent>
+            </Dialog>
+          )}
 
-            {obra.descricao && (
-              <Card className="p-4 rounded-2xl border-none shadow-lg bg-white/80 backdrop-blur-sm">
-                <h2 className="text-lg md:text-xl font-semibold flex items-center mb-2 text-teal-700">
-                  <BookText className="h-5 w-5 mr-2" /> Sobre a Obra
-                </h2>
-                <p className="text-stone-700 whitespace-pre-wrap">
-                  {obra.descricao}
-                </p>
-              </Card>
-            )}
-          </div>
+          {obra.descricao && (
+            <Card className="p-4 rounded-2xl border-none shadow-lg bg-white/80 backdrop-blur-sm">
+              <h2 className="text-lg md:text-xl font-semibold flex items-center mb-2 text-teal-700">
+                <BookText className="h-5 w-5 mr-2" /> Sobre a Obra
+              </h2>
+              <p className="text-stone-700 whitespace-pre-wrap">
+                {obra.descricao}
+              </p>
+            </Card>
+          )}
         </div>
 
         <div className="md:col-span-1 space-y-6">

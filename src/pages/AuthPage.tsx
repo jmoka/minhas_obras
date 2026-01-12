@@ -23,8 +23,13 @@ const signupSchema = z.object({
   nome: z.string().min(1, "O nome é obrigatório"),
 });
 
+const resetPasswordSchema = z.object({
+  email: z.string().email("Email inválido"),
+});
+
 type LoginFormValues = z.infer<typeof loginSchema>;
 type SignupFormValues = z.infer<typeof signupSchema>;
+type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 
 const AuthPage: React.FC = () => {
   const navigate = useNavigate();
@@ -44,6 +49,13 @@ const AuthPage: React.FC = () => {
       email: "",
       password: "",
       nome: "",
+    },
+  });
+
+  const resetPasswordForm = useForm<ResetPasswordFormValues>({
+    resolver: zodResolver(resetPasswordSchema),
+    defaultValues: {
+      email: "",
     },
   });
 
@@ -100,6 +112,29 @@ const AuthPage: React.FC = () => {
     }
   };
 
+  const onResetPassword = async (values: ResetPasswordFormValues) => {
+    setIsLoading(true);
+    const loadingToastId = showLoading("Enviando email de recuperação...");
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(values.email, {
+        redirectTo: `${window.location.origin}/auth`,
+      });
+
+      if (error) throw error;
+
+      dismissToast(loadingToastId);
+      showSuccess("Email de recuperação enviado! Verifique sua caixa de entrada.");
+      resetPasswordForm.reset();
+    } catch (error) {
+      dismissToast(loadingToastId);
+      showError(`Erro ao enviar email: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="max-w-md mx-auto mt-10">
       <Card>
@@ -111,9 +146,10 @@ const AuthPage: React.FC = () => {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="signup">Cadastro</TabsTrigger>
+              <TabsTrigger value="reset">Recuperar</TabsTrigger>
             </TabsList>
 
             <TabsContent value="login">
@@ -203,6 +239,30 @@ const AuthPage: React.FC = () => {
                   <Button type="submit" className="w-full" disabled={isLoading}>
                     <UserPlus className="mr-2 h-4 w-4" />
                     Criar Conta
+                  </Button>
+                </form>
+              </Form>
+            </TabsContent>
+
+            <TabsContent value="reset">
+              <Form {...resetPasswordForm}>
+                <form onSubmit={resetPasswordForm.handleSubmit(onResetPassword)} className="space-y-4">
+                  <FormField
+                    control={resetPasswordForm.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Email</FormLabel>
+                        <FormControl>
+                          <Input type="email" placeholder="seu@email.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button type="submit" className="w-full" disabled={isLoading}>
+                    Enviar Link de Recuperação
                   </Button>
                 </form>
               </Form>

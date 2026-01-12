@@ -1,9 +1,11 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { Obra } from "@/types/database";
-import { getPublicUrl } from "@/integrations/supabase/api";
-import { Image, User } from "lucide-react";
+import { getPublicUrl, getObraViewCount } from "@/integrations/supabase/api";
+import { Image, User, Eye } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
 interface ObraCardProps {
   obra: Obra;
@@ -15,6 +17,12 @@ const ObraCard: React.FC<ObraCardProps> = ({ obra }) => {
   const ownerPhotoUrl = getPublicUrl(obra.foto_dono);
   
   const creationDate = obra.data_criacao ? new Date(obra.data_criacao).toLocaleDateString('pt-BR') : 'Data Desconhecida';
+
+  const { data: viewCount } = useQuery({
+    queryKey: ['obra-views', obra.id],
+    queryFn: () => getObraViewCount(obra.id),
+    staleTime: 60000,
+  });
 
   return (
     <div className="border rounded-lg overflow-hidden shadow-sm hover:shadow-lg transition duration-300 ease-in-out bg-card h-full flex flex-col group">
@@ -30,6 +38,13 @@ const ObraCard: React.FC<ObraCardProps> = ({ obra }) => {
             />
           ) : (
             <Image className="h-12 w-12 text-gray-400" />
+          )}
+          
+          {viewCount !== undefined && viewCount > 0 && (
+            <Badge className="absolute top-3 right-3 bg-black/60 text-white border-none flex items-center gap-1 backdrop-blur-sm">
+              <Eye className="w-3 h-3" />
+              {viewCount}
+            </Badge>
           )}
         </div>
       </Link>

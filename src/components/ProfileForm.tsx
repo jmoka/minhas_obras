@@ -17,6 +17,8 @@ import { supabase } from "@/integrations/supabase/client";
 const formSchema = z.object({
   nome: z.string().min(1, "O nome é obrigatório."),
   descricao: z.string().optional(),
+  email: z.string().email("Email inválido.").optional().or(z.literal("")),
+  whatsapp: z.string().optional(),
   
   // File field for new avatar upload
   newFotoFile: z.instanceof(File).optional(),
@@ -40,6 +42,8 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave }) => 
     defaultValues: {
       nome: initialProfile?.nome || "",
       descricao: initialProfile?.descricao || "",
+      email: initialProfile?.email || "",
+      whatsapp: initialProfile?.whatsapp || "",
     },
   });
 
@@ -66,6 +70,8 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave }) => 
       const profileData = {
         nome: values.nome,
         descricao: values.descricao || null,
+        email: values.email || null,
+        whatsapp: values.whatsapp || null,
         foto: fotoPath,
       };
 
@@ -76,6 +82,8 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave }) => 
             id: user.id,
             nome: values.nome,
             descricao: values.descricao || null,
+            email: values.email || null,
+            whatsapp: values.whatsapp || null,
             foto: fotoPath,
             admin: false,
             bloc: false,
@@ -170,6 +178,48 @@ const ProfileForm: React.FC<ProfileFormProps> = ({ initialProfile, onSave }) => 
                   className="resize-none min-h-[150px] border-stone-200 focus:border-teal-500 focus:ring-teal-500"
                   {...field} 
                   value={field.value || ""} // Ensure controlled component handles null/undefined
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Email */}
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-teal-800 font-medium">Email</FormLabel>
+              <FormControl>
+                <Input 
+                  type="email"
+                  placeholder="seu@email.com" 
+                  {...field} 
+                  value={field.value || ""}
+                  className="border-stone-200 focus:border-teal-500 focus:ring-teal-500" 
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* WhatsApp */}
+        <FormField
+          control={form.control}
+          name="whatsapp"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="text-teal-800 font-medium">WhatsApp</FormLabel>
+              <FormControl>
+                <Input 
+                  type="tel"
+                  placeholder="(11) 99999-9999" 
+                  {...field} 
+                  value={field.value || ""}
+                  className="border-stone-200 focus:border-teal-500 focus:ring-teal-500" 
                 />
               </FormControl>
               <FormMessage />
