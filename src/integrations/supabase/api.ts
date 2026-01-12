@@ -641,3 +641,30 @@ export const fetchAnalysisHistory = async () => {
   }
   return data;
 };
+
+// Settings Functions
+export const getSetting = async (key: string): Promise<string | null> => {
+  const { data, error } = await supabase
+    .from("settings")
+    .select("value")
+    .eq("key", key)
+    .single();
+
+  if (error && error.code !== 'PGRST116') { // PGRST116 = no rows found, which is fine
+    console.error(`Error fetching setting ${key}:`, error);
+    throw new Error(`Não foi possível carregar a configuração: ${error.message}`);
+  }
+
+  return data?.value || null;
+};
+
+export const setSetting = async (key: string, value: string): Promise<void> => {
+  const { error } = await supabase
+    .from("settings")
+    .upsert({ key, value }, { onConflict: 'key' });
+
+  if (error) {
+    console.error(`Error setting ${key}:`, error);
+    throw new Error(`Não foi possível salvar a configuração: ${error.message}`);
+  }
+};

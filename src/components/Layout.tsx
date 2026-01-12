@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Palette, User, Plus, Users, LogIn, LogOut, Menu, X, Home, AlertCircle, MessageSquare, Sparkles } from "lucide-react";
+import { Palette, User, Plus, Users, LogIn, LogOut, Menu, X, Home, AlertCircle, MessageSquare, Sparkles, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -184,7 +184,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   }}
                 />
                 {profile?.admin && (
-                  <NavItem to="/admin/users" icon={<Users className="h-5 w-5" />} label="Admin Usuários" />
+                  <>
+                    <NavItem to="/admin/users" icon={<Users className="h-5 w-5" />} label="Admin Usuários" />
+                    <NavItem to="/admin/settings" icon={<Settings className="h-5 w-5" />} label="Configurações" />
+                  </>
                 )}
                 <Button variant="ghost" size="sm" onClick={handleLogout}>
                   <LogOut className="h-5 w-5 mr-2" />
@@ -290,7 +293,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   }}
                 />
                 {profile?.admin && (
-                  <NavItem to="/admin/users" icon={<Users className="h-5 w-5" />} label="Admin Usuários" onClick={closeMenu} />
+                  <>
+                    <NavItem to="/admin/users" icon={<Users className="h-5 w-5" />} label="Admin Usuários" onClick={closeMenu} />
+                    <NavItem to="/admin/settings" icon={<Settings className="h-5 w-5" />} label="Configurações" onClick={closeMenu} />
+                  </>
                 )}
                 <Button variant="ghost" size="sm" onClick={handleLogout} className="justify-start w-full">
                   <LogOut className="h-5 w-5 mr-2" />

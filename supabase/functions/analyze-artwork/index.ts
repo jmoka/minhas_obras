@@ -6,7 +6,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const N8N_WEBHOOK_URL = "https://jota-empresas-n8n.ubjifz.easypanel.host/webhook/8f1947b3-414a-4200-8f0f-d66ba0757271";
 const BUCKET_NAME = "art_gallery";
 
 serve(async (req) => {
@@ -34,12 +33,26 @@ serve(async (req) => {
       throw new Error("Falha na autenticação.");
     }
 
-    // 2. Fazer upload da imagem para o Supabase Storage
+    // 2. Inicializar cliente admin
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // 3. Obter URL do webhook n8n das configurações
+    const { data: setting, error: settingError } = await supabaseAdmin
+      .from("settings")
+      .select("value")
+      .eq("key", "n8n_webhook_url")
+      .single();
+
+    if (settingError || !setting?.value) {
+      console.error(`[${functionName}] Erro ao buscar URL do webhook n8n:`, settingError?.message);
+      throw new Error("A URL do webhook de análise não está configurada. Configure-a no painel de administração.");
+    }
+    const n8nWebhookUrl = setting.value;
+
+    // 4. Fazer upload da imagem para o Supabase Storage
     const file = await req.blob();
     const fileExtension = file.type.split("/")[1];
     const filePath = `analysis_images/${user.id}/${crypto.randomUUID()}.${fileExtension}`;
@@ -56,7 +69,7 @@ serve(async (req) => {
       .from(BUCKET_NAME)
       .getPublicUrl(filePath);
 
-    // 3. Buscar dados do perfil do usuário
+    // 5. Buscar dados do perfil do usuário
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("user")
       .select("nome, whatsapp")
@@ -67,14 +80,14 @@ serve(async (req) => {
       throw new Error("Não foi possível encontrar o perfil do usuário.");
     }
 
-    // 4. Chamar o webhook do n8n
+    // 6. Chamar o webhook do n8n
     const n8nPayload = {
       imageUrl: publicUrl,
       userName: profile.nome,
       userPhone: profile.whatsapp,
     };
 
-    const n8nResponse = await fetch(N8N_WEBHOOK_URL, {
+    const n8nResponse = await fetch(n8nWebhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(n8nPayload),
@@ -86,7 +99,7 @@ serve(async (req) => {
 
     const analysisResult = await n8nResponse.json();
 
-    // 5. Salvar o resultado na tabela obra_analysis
+    // 7. Salvar o resultado na tabela obra_analysis
     const { data: savedAnalysis, error: insertError } = await supabaseAdmin
       .from("obra_analysis")
       .insert({
