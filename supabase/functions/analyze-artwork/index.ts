@@ -96,10 +96,14 @@ serve(async (req) => {
     const analysisResult = await n8nResponse.json();
     console.log(`[${functionName}] Resposta recebida do webhook n8n para o usuário ${user.id}:`, JSON.stringify(analysisResult, null, 2));
 
-    if (!Array.isArray(analysisResult) || analysisResult.length === 0) {
+    let resultData;
+    if (Array.isArray(analysisResult) && analysisResult.length > 0) {
+      resultData = analysisResult[0];
+    } else if (typeof analysisResult === 'object' && analysisResult !== null && !Array.isArray(analysisResult)) {
+      resultData = analysisResult;
+    } else {
       throw new Error("A resposta da análise da IA está em um formato inesperado ou está vazia.");
     }
-    const resultData = analysisResult[0];
 
     if (resultData["Sugestão de Titulo"] === "Imagem Inválida para Análise") {
       console.warn(`[${functionName}] n8n retornou um erro de imagem inválida para o usuário ${user.id}.`);
