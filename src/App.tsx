@@ -21,6 +21,7 @@ import ArtistPublicPage from "./pages/ArtistPublicPage";
 import WelcomePage from "./pages/WelcomePage";
 import ForumPage from "./pages/ForumPage";
 import TopicPage from "./pages/TopicPage";
+import ArtworkAnalyzerPage from "./pages/ArtworkAnalyzerPage";
 
 const queryClient = new QueryClient();
 
@@ -79,6 +80,11 @@ const App = () => (
               <Route path="/forum/:topicId" element={
                 <ProtectedRoute requireUnblocked={true}>
                   <TopicPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/analyzer" element={
+                <ProtectedRoute requireUnblocked={true}>
+                  <ArtworkAnalyzerPage />
                 </ProtectedRoute>
               } />
               

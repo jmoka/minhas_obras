@@ -609,3 +609,35 @@ export const createForumMessage = async (topicId: string, content: string): Prom
   }
   return data as ForumMessage;
 };
+
+// Artwork Analyzer Functions
+export const analyzeArtwork = async (file: File) => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error("Usuário não autenticado.");
+
+  const { data, error } = await supabase.functions.invoke("analyze-artwork", {
+    body: file,
+    headers: {
+      'Content-Type': file.type,
+      'Authorization': `Bearer ${session.access_token}`,
+    },
+  });
+
+  if (error) throw error;
+  if (data.error) throw new Error(data.error);
+  
+  return data;
+};
+
+export const fetchAnalysisHistory = async () => {
+  const { data, error } = await supabase
+    .from("obra_analysis")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching analysis history:", error);
+    throw new Error("Não foi possível carregar o histórico de análises.");
+  }
+  return data;
+};
