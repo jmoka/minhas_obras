@@ -15,11 +15,9 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Declarar filePath no escopo mais alto para que possa ser usado no bloco catch
   let filePath = "";
 
   try {
-    // 1. Autenticar o usuário
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       throw new Error("Usuário não autenticado.");
@@ -36,13 +34,11 @@ serve(async (req) => {
       throw new Error("Falha na autenticação.");
     }
 
-    // 2. Inicializar cliente admin
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // 3. Obter URL do webhook n8n das configurações
     const { data: setting, error: settingError } = await supabaseAdmin
       .from("settings")
       .select("value")
@@ -55,9 +51,8 @@ serve(async (req) => {
     }
     const n8nWebhookUrl = setting.value;
 
-    // 4. Fazer upload da imagem para o Supabase Storage
     const file = await req.blob();
-    const fileExtension = file.type.split("/")[1] || 'png'; // Fallback para png
+    const fileExtension = file.type.split("/")[1] || 'png';
     filePath = `analysis_images/${user.id}/${crypto.randomUUID()}.${fileExtension}`;
 
     const { error: uploadError } = await supabaseAdmin.storage
@@ -72,7 +67,6 @@ serve(async (req) => {
       .from(BUCKET_NAME)
       .getPublicUrl(filePath);
 
-    // 5. Buscar dados do perfil do usuário
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("user")
       .select("nome, whatsapp")
@@ -83,7 +77,6 @@ serve(async (req) => {
       throw new Error("Não foi possível encontrar o perfil do usuário.");
     }
 
-    // 6. Chamar o webhook do n8n
     const n8nPayload = {
       imageUrl: publicUrl,
       userName: profile.nome,
@@ -101,29 +94,28 @@ serve(async (req) => {
     }
 
     const analysisResult = await n8nResponse.json();
-
-    // Log da resposta recebida do n8n
     console.log(`[${functionName}] Resposta recebida do webhook n8n para o usuário ${user.id}:`, JSON.stringify(analysisResult, null, 2));
 
-    // 7. Verificar se a resposta da IA é um erro de imagem inválida
-    if (analysisResult["Sugestão de Titulo"] === "Imagem Inválida para Análise") {
+    if (!Array.isArray(analysisResult) || analysisResult.length === 0) {
+      throw new Error("A resposta da análise da IA está em um formato inesperado ou está vazia.");
+    }
+    const resultData = analysisResult[0];
+
+    if (resultData["Sugestão de Titulo"] === "Imagem Inválida para Análise") {
       console.warn(`[${functionName}] n8n retornou um erro de imagem inválida para o usuário ${user.id}.`);
-      // Deleta a imagem inútil que foi enviada
       await supabaseAdmin.storage.from(BUCKET_NAME).remove([filePath]);
-      // Lança um erro que será enviado de volta ao cliente
       throw new Error("A IA não conseguiu processar o arquivo. Por favor, verifique se é uma imagem válida e tente novamente.");
     }
 
-    // 8. Salvar o resultado na tabela obra_analysis
     const { data: savedAnalysis, error: insertError } = await supabaseAdmin
       .from("obra_analysis")
       .insert({
         user_id: user.id,
         image_url: filePath,
-        suggested_title: analysisResult["Sugestão de Titulo"],
-        description: analysisResult["Descrição da Imagem detalhada"],
-        style_classification: analysisResult["Classificação do estilo"],
-        constructive_feedback: analysisResult["Uma opinião construtiva visando a melhoria do artista"],
+        suggested_title: resultData["Sugestão de Titulo"],
+        description: resultData["Descrição da Imagem detalhada"],
+        style_classification: resultData["Classificação do estilo"],
+        constructive_feedback: resultData["Uma opinião construtiva visando a melhoria do artista"],
       })
       .select()
       .single();
@@ -139,7 +131,6 @@ serve(async (req) => {
 
   } catch (error) {
     console.error(`[${functionName}] Erro:`, error.message);
-    // Se um arquivo foi enviado antes do erro, tenta deletá-lo
     if (filePath) {
       const supabaseAdmin = createClient(
         Deno.env.get("SUPABASE_URL")!,
