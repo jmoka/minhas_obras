@@ -105,25 +105,34 @@ serve(async (req) => {
       throw new Error("A resposta da análise da IA está em um formato inesperado ou está vazia.");
     }
 
-    // Check if the actual data is nested under a 'json' property, a common n8n pattern
     const resultData = rawData.json || rawData;
+    
+    // Normalize keys to be lowercase to handle potential inconsistencies
+    const normalizedResultData: { [key: string]: any } = {};
+    for (const key in resultData) {
+      if (Object.prototype.hasOwnProperty.call(resultData, key)) {
+        normalizedResultData[key.toLowerCase()] = resultData[key];
+      }
+    }
 
-    if (resultData["Sugestão de Titulo"] === "Imagem Inválida para Análise") {
+    if (normalizedResultData["sugestão de titulo"] === "Imagem Inválida para Análise") {
       console.warn(`[${functionName}] n8n retornou um erro de imagem inválida para o usuário ${user.id}.`);
       await supabaseAdmin.storage.from(BUCKET_NAME).remove([filePath]);
       throw new Error("A IA não conseguiu processar o arquivo. Por favor, verifique se é uma imagem válida e tente novamente.");
     }
 
+    const insertPayload = {
+      user_id: user.id,
+      image_url: filePath,
+      suggested_title: normalizedResultData["sugestão de titulo"] || null,
+      description: normalizedResultData["descrição da imagem detalhada"] || null,
+      style_classification: normalizedResultData["classificação do estilo"] || null,
+      constructive_feedback: normalizedResultData["uma opinião construtiva visando a melhoria do artista"] || null,
+    };
+
     const { data: savedAnalysis, error: insertError } = await supabaseAdmin
       .from("obra_analysis")
-      .insert({
-        user_id: user.id,
-        image_url: filePath,
-        suggested_title: resultData["Sugestão de Titulo"],
-        description: resultData["Descrição da Imagem detalhada"],
-        style_classification: resultData["Classificação do estilo"],
-        constructive_feedback: resultData["Uma opinião construtiva visando a melhoria do artista"],
-      })
+      .insert(insertPayload)
       .select()
       .single();
 
