@@ -8,6 +8,34 @@ const corsHeaders = {
 
 const BUCKET_NAME = "art_gallery";
 
+// Helper function to normalize strings (lowercase, no accents, trim)
+function normalizeString(str: string): string {
+  if (typeof str !== 'string') return '';
+  return str
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
+// Helper function to get a value from an object using multiple possible keys
+function getFieldValue(obj: any, possibleKeys: string[]): string | null {
+  const normalizedObjKeys: { [key: string]: string } = {};
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      normalizedObjKeys[normalizeString(key)] = key;
+    }
+  }
+
+  for (const key of possibleKeys) {
+    const normalizedKey = normalizeString(key);
+    if (normalizedObjKeys[normalizedKey]) {
+      return obj[normalizedObjKeys[normalizedKey]];
+    }
+  }
+  return null;
+}
+
 serve(async (req) => {
   const functionName = "analyze-artwork";
 
@@ -94,41 +122,49 @@ serve(async (req) => {
     }
 
     const analysisResult = await n8nResponse.json();
-    console.log(`[${functionName}] Resposta recebida do webhook n8n para o usuário ${user.id}:`, JSON.stringify(analysisResult, null, 2));
+    console.log(`[${functionName}] ====== RESPOSTA BRUTA DO N8N ======`);
+    console.log(`[${functionName}] Tipo: ${typeof analysisResult}, É Array: ${Array.isArray(analysisResult)}`);
+    console.log(`[${functionName}] Resposta completa:`, JSON.stringify(analysisResult, null, 2));
 
     let rawData;
     if (Array.isArray(analysisResult) && analysisResult.length > 0) {
       rawData = analysisResult[0];
-    } else if (typeof analysisResult === 'object' && analysisResult !== null && !Array.isArray(analysisResult)) {
+    } else if (typeof analysisResult === 'object' && analysisResult !== null) {
       rawData = analysisResult;
     } else {
       throw new Error("A resposta da análise da IA está em um formato inesperado ou está vazia.");
     }
+    
+    console.log(`[${functionName}] ====== RAW DATA ======`);
+    console.log(`[${functionName}] rawData:`, JSON.stringify(rawData, null, 2));
 
     const resultData = rawData.json || rawData;
-    
-    // Normalize keys to be lowercase to handle potential inconsistencies
-    const normalizedResultData: { [key: string]: any } = {};
-    for (const key in resultData) {
-      if (Object.prototype.hasOwnProperty.call(resultData, key)) {
-        normalizedResultData[key.toLowerCase()] = resultData[key];
-      }
-    }
+    console.log(`[${functionName}] ====== RESULT DATA (após verificar .json) ======`);
+    console.log(`[${functionName}] resultData:`, JSON.stringify(resultData, null, 2));
+    console.log(`[${functionName}] Chaves presentes:`, Object.keys(resultData));
 
-    if (normalizedResultData["sugestão de titulo"] === "Imagem Inválida para Análise") {
+    const insertPayload = {
+      user_id: user.id,
+      image_url: filePath,
+      suggested_title: getFieldValue(resultData, ["Sugestão de Titulo", "Sugestao de Titulo", "titulo", "title"]),
+      description: getFieldValue(resultData, ["Descrição da Imagem detalhada", "Descricao da Imagem detalhada", "Descrição", "Descricao"]),
+      style_classification: getFieldValue(resultData, ["Classificação do estilo", "Classificacao do estilo", "Estilo"]),
+      constructive_feedback: getFieldValue(resultData, ["Uma opinião construtiva visando a melhoria do artista", "Uma opiniao construtiva visando a melhoria do artista", "Opinião Construtiva", "Opiniao Construtiva", "Feedback"]),
+    };
+    
+    console.log(`[${functionName}] ====== INSERT PAYLOAD ======`);
+    console.log(`[${functionName}] Payload para inserção:`, JSON.stringify(insertPayload, null, 2));
+
+    if (insertPayload.suggested_title === "Imagem Inválida para Análise") {
       console.warn(`[${functionName}] n8n retornou um erro de imagem inválida para o usuário ${user.id}.`);
       await supabaseAdmin.storage.from(BUCKET_NAME).remove([filePath]);
       throw new Error("A IA não conseguiu processar o arquivo. Por favor, verifique se é uma imagem válida e tente novamente.");
     }
 
-    const insertPayload = {
-      user_id: user.id,
-      image_url: filePath,
-      suggested_title: normalizedResultData["sugestão de titulo"] || null,
-      description: normalizedResultData["descrição da imagem detalhada"] || null,
-      style_classification: normalizedResultData["classificação do estilo"] || null,
-      constructive_feedback: normalizedResultData["uma opinião construtiva visando a melhoria do artista"] || null,
-    };
+    if (!insertPayload.suggested_title && !insertPayload.description && !insertPayload.style_classification && !insertPayload.constructive_feedback) {
+      console.error(`[${functionName}] ❌ Nenhum campo foi extraído da resposta.`);
+      throw new Error("Não foi possível extrair os dados da análise. Verifique o formato da resposta do webhook.");
+    }
 
     const { data: savedAnalysis, error: insertError } = await supabaseAdmin
       .from("obra_analysis")
@@ -139,6 +175,8 @@ serve(async (req) => {
     if (insertError) {
       throw new Error(`Erro ao salvar a análise: ${insertError.message}`);
     }
+    
+    console.log(`[${functionName}] ✅ Análise salva com sucesso!`);
 
     return new Response(JSON.stringify(savedAnalysis), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -146,7 +184,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error(`[${functionName}] Erro:`, error.message);
+    console.error(`[${functionName}] ❌ ERRO:`, error.message);
     if (filePath) {
       const supabaseAdmin = createClient(
         Deno.env.get("SUPABASE_URL")!,

@@ -29,6 +29,18 @@
 - `obras_id` (bigint, FK → obras.id) - Obra relacionada
 - `url` (text) - Caminho da imagem no Storage
 
+#### `obra_analysis` (Análise de Obras com IA)
+- `id` (bigint, PK)
+- `created_at` (timestamptz) - Data da análise
+- `user_id` (uuid, FK → auth.users.id) - Usuário que solicitou
+- `image_url` (text) - Caminho da imagem no Storage
+- `suggested_title` (text) - Título sugerido pela IA
+- `description` (text) - Descrição detalhada da obra
+- `style_classification` (text) - Classificação do estilo artístico
+- `constructive_feedback` (text) - Feedback construtivo
+
+📖 **Documentação da API de Análise**: [docs/ARTWORK_ANALYSIS_API.md](./docs/ARTWORK_ANALYSIS_API.md)
+
 ### Relacionamentos
 
 ```
@@ -309,9 +321,42 @@ Para dúvidas ou problemas:
 
 ---
 
-**Última atualização**: 2026-01-12
+**Última atualização**: 2026-01-13
 
 ## 🎉 Correções e Implementações Recentes
+
+### v1.3.0 - Correção da Persistência de Análise de Obras com IA (2026-01-13)
+
+✅ **Problema resolvido**: Campos da análise de imagens não estavam sendo persistidos no banco de dados
+
+**Implementações:**
+- Normalização robusta de campos que remove acentos e é case-insensitive
+- Logging detalhado em todos os pontos críticos da Edge Function
+- Validação de dados antes da inserção no banco
+- Suporte a múltiplas variações de nomes de campos
+- Tratamento aprimorado de erros com mensagens descritivas
+
+**Arquivos modificados:**
+- `supabase/functions/analyze-artwork/index.ts` - Lógica de mapeamento e validação
+
+**Arquivos criados:**
+- `docs/ARTWORK_ANALYSIS_API.md` - Documentação completa da API de análise
+
+**Melhorias técnicas:**
+- Função `normalizeString()` para normalização Unicode (NFD) com remoção de acentos
+- Função `getFieldValue()` para buscar valores por múltiplas chaves possíveis
+- Logs estruturados com emojis para facilitar identificação rápida
+- Validação que garante pelo menos um campo preenchido antes de inserir
+
+**Como verificar se está funcionando:**
+1. Envie uma imagem para análise
+2. Verifique os logs no Supabase Dashboard → Edge Functions → analyze-artwork → Logs
+3. Procure por `✅ Análise salva com sucesso!`
+4. Consulte o histórico de análises para confirmar que todos os campos foram preenchidos
+
+📖 **Documentação da API**: [docs/ARTWORK_ANALYSIS_API.md](./docs/ARTWORK_ANALYSIS_API.md)
+
+---
 
 ### v1.2.0 - Sistema de Aprovação de Usuários (2026-01-12)
 
