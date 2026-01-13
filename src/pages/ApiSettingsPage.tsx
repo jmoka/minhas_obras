@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { showSuccess, showError } from "@/utils/toast";
-import { Save, Key, CheckCircle, AlertCircle } from "lucide-react";
+import { Save, Key, CheckCircle, AlertCircle, AlertTriangle } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 const settingsSchema = z.object({
@@ -70,12 +70,20 @@ const ApiSettingsPage: React.FC = () => {
             Sua Chave da API do Google Gemini
           </CardTitle>
           <CardDescription>
-            Para usar o Analisador de Obras, você precisa fornecer sua própria chave da API do Google Gemini. Sua chave é armazenada de forma segura e criptografada.
+            Para usar o Analisador de Obras, você precisa fornecer sua própria chave da API do Google Gemini.
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <Alert variant="destructive" className="mb-6">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Aviso de Segurança</AlertTitle>
+            <AlertDescription>
+              Sua chave de API será armazenada em nosso banco de dados em texto simples. Embora tomemos medidas para proteger nossos sistemas, por favor, esteja ciente dos riscos.
+            </AlertDescription>
+          </Alert>
+
           {apiKeyStatus?.isSet ? (
-            <Alert className="bg-green-50 border-green-200">
+            <Alert className="bg-green-50 border-green-200 mb-6">
               <CheckCircle className="h-4 w-4 text-green-700" />
               <AlertTitle className="text-green-800">Chave de API configurada!</AlertTitle>
               <AlertDescription className="text-green-700">
@@ -83,7 +91,7 @@ const ApiSettingsPage: React.FC = () => {
               </AlertDescription>
             </Alert>
           ) : (
-            <Alert variant="destructive" className="bg-yellow-50 border-yellow-200">
+            <Alert variant="destructive" className="bg-yellow-50 border-yellow-200 mb-6">
               <AlertCircle className="h-4 w-4 text-yellow-700" />
               <AlertTitle className="text-yellow-800">Ação Necessária</AlertTitle>
               <AlertDescription className="text-yellow-700">
@@ -93,7 +101,7 @@ const ApiSettingsPage: React.FC = () => {
           )}
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-6">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
                 control={form.control}
                 name="gemini_api_key"

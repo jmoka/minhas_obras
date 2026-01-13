@@ -41,16 +41,17 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // A criptografia será feita no lado do banco de dados para segurança máxima.
-    // Aqui, apenas chamamos a função RPC que fará o upsert seguro.
-    const { error: rpcError } = await supabaseAdmin.rpc('upsert_api_key', {
-      p_user_id: user.id,
-      p_api_key: apiKey
-    });
+    // Upsert the API key in plain text
+    const { error: upsertError } = await supabaseAdmin
+      .from('user_api_keys')
+      .upsert({
+        user_id: user.id,
+        api_key: apiKey
+      }, { onConflict: 'user_id' });
 
-    if (rpcError) {
-      console.error(`[${functionName}] Erro ao salvar chave:`, rpcError);
-      throw new Error(`Não foi possível salvar a chave de API: ${rpcError.message}`);
+    if (upsertError) {
+      console.error(`[${functionName}] Erro ao salvar chave:`, upsertError);
+      throw new Error(`Não foi possível salvar a chave de API: ${upsertError.message}`);
     }
 
     return new Response(JSON.stringify({ message: "Chave de API salva com sucesso." }), {

@@ -7,19 +7,22 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Função SQL para buscar e descriptografar a chave de API
-const GET_DECRYPTED_KEY_FUNCTION = "get_decrypted_api_key";
+// Helper function to get the plain text API key
+async function getApiKey(supabaseAdmin: any, userId: string): Promise<string> {
+  const { data, error } = await supabaseAdmin
+    .from('user_api_keys')
+    .select('api_key')
+    .eq('user_id', userId)
+    .single();
 
-async function getDecryptedApiKey(supabaseAdmin: any, userId: string): Promise<string> {
-  const { data, error } = await supabaseAdmin.rpc(GET_DECRYPTED_KEY_FUNCTION, { p_user_id: userId });
   if (error) {
     console.error("Erro ao buscar chave de API:", error);
-    throw new Error("Não foi possível encontrar ou descriptografar sua chave de API. Verifique se ela está salva corretamente.");
+    throw new Error("Não foi possível encontrar sua chave de API. Verifique se ela está salva corretamente.");
   }
-  if (!data) {
+  if (!data || !data.api_key) {
     throw new Error("Nenhuma chave de API configurada para este usuário.");
   }
-  return data;
+  return data.api_key;
 }
 
 serve(async (req) => {
@@ -53,7 +56,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const apiKey = await getDecryptedApiKey(supabaseAdmin, user.id);
+    const apiKey = await getApiKey(supabaseAdmin, user.id);
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
 
