@@ -23,6 +23,7 @@ import ForumPage from "./pages/ForumPage";
 import TopicPage from "./pages/TopicPage";
 import ArtworkAnalyzerPage from "./pages/ArtworkAnalyzerPage";
 import AdminSettingsPage from "./pages/AdminSettingsPage";
+import ApiSettingsPage from "./pages/ApiSettingsPage";
 
 const queryClient = new QueryClient();
 
@@ -71,6 +72,11 @@ const App = () => (
               <Route path="/admin/settings" element={
                 <ProtectedRoute requireUnblocked={true}>
                   <AdminSettingsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/settings/api" element={
+                <ProtectedRoute requireUnblocked={true}>
+                  <ApiSettingsPage />
                 </ProtectedRoute>
               } />
               <Route path="/profile" element={

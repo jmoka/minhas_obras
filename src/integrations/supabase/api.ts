@@ -615,10 +615,17 @@ export const analyzeArtwork = async (file: File) => {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error("Usuário não autenticado.");
 
-  const { data, error } = await supabase.functions.invoke("analyze-artwork", {
-    body: file,
+  // Primeiro, faz o upload do arquivo para obter uma URL
+  const filePath = await uploadFile(file, `analysis_images/${session.user.id}`);
+  if (!filePath) {
+    throw new Error("Falha no upload da imagem para análise.");
+  }
+  const imageUrl = getPublicUrl(filePath);
+
+  // Em seguida, chama a nova Edge Function com a URL da imagem
+  const { data, error } = await supabase.functions.invoke("analyze-with-gemini", {
+    body: { imageUrl, filePath },
     headers: {
-      'Content-Type': file.type,
       'Authorization': `Bearer ${session.access_token}`,
     },
   });
@@ -689,4 +696,34 @@ export const setSetting = async (key: string, value: string): Promise<void> => {
     console.error(`Error setting ${key}:`, error);
     throw new Error(`Não foi possível salvar a configuração: ${error.message}`);
   }
+};
+
+// User API Key Functions
+export const saveUserApiKey = async (apiKey: string) => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error("Usuário não autenticado.");
+
+  const { data, error } = await supabase.functions.invoke("save-user-api-key", {
+    body: { apiKey },
+    headers: {
+      'Authorization': `Bearer ${session.access_token}`,
+    },
+  });
+
+  if (error) throw error;
+  if (data.error) throw new Error(data.error);
+  return data;
+};
+
+export const getUserApiKeyStatus = async (): Promise<{ isSet: boolean }> => {
+  const { data, error } = await supabase
+    .from("user_api_keys")
+    .select("id", { count: "exact", head: true });
+
+  if (error) {
+    console.error("Error checking API key status:", error);
+    return { isSet: false };
+  }
+
+  return { isSet: (data?.length || 0) > 0 };
 };

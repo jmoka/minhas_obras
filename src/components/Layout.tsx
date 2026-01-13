@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Palette, User, Plus, Users, LogIn, LogOut, Menu, X, Home, AlertCircle, MessageSquare, Sparkles, Settings } from "lucide-react";
+import { Palette, User, Plus, Users, LogIn, LogOut, Menu, X, Home, AlertCircle, MessageSquare, Sparkles, Settings, Key } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -189,6 +189,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     <NavItem to="/admin/settings" icon={<Settings className="h-5 w-5" />} label="Configurações" />
                   </>
                 )}
+                 <NavItem to="/settings/api" icon={<Key className="h-5 w-5" />} label="API Key" />
                 <Button variant="ghost" size="sm" onClick={handleLogout}>
                   <LogOut className="h-5 w-5 mr-2" />
                   <span>Sair</span>
@@ -298,6 +299,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     <NavItem to="/admin/settings" icon={<Settings className="h-5 w-5" />} label="Configurações" onClick={closeMenu} />
                   </>
                 )}
+                <NavItem to="/settings/api" icon={<Key className="h-5 w-5" />} label="API Key" onClick={closeMenu} />
                 <Button variant="ghost" size="sm" onClick={handleLogout} className="justify-start w-full">
                   <LogOut className="h-5 w-5 mr-2" />
                   <span>Sair</span>

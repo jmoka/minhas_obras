@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { analyzeArtwork, fetchAnalysisHistory, getPublicUrl, deleteAnalysis, getSetting } from "@/integrations/supabase/api";
+import { analyzeArtwork, fetchAnalysisHistory, getPublicUrl, deleteAnalysis, getUserApiKeyStatus } from "@/integrations/supabase/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Upload, Sparkles, Lightbulb, Palette, MessageSquare, History, Image as ImageIcon, Trash2, AlertCircle } from "lucide-react";
+import { Upload, Sparkles, Lightbulb, Palette, MessageSquare, History, Image as ImageIcon, Trash2, AlertCircle, Key } from "lucide-react";
 import { showSuccess, showError } from "@/utils/toast";
 import { Link } from "react-router-dom";
 
@@ -40,9 +40,9 @@ const ArtworkAnalyzerPage: React.FC = () => {
     resolver: zodResolver(formSchema),
   });
 
-  const { data: webhookUrl, isLoading: isLoadingUrl } = useQuery({
-    queryKey: ["settings", "n8n_webhook_url"],
-    queryFn: () => getSetting("n8n_webhook_url"),
+  const { data: apiKeyStatus, isLoading: isLoadingKeyStatus } = useQuery({
+    queryKey: ["userApiKeyStatus"],
+    queryFn: getUserApiKeyStatus,
   });
 
   const { data: history, isLoading: isLoadingHistory } = useQuery({
@@ -104,7 +104,7 @@ const ArtworkAnalyzerPage: React.FC = () => {
           Analisador de Obras com IA
         </h1>
         <p className="mt-4 text-lg text-stone-600 max-w-3xl mx-auto">
-          Receba feedback instantâneo sobre sua arte. Envie uma imagem e nossa IA fornecerá uma análise detalhada, sugestões e críticas construtivas.
+          Receba feedback instantâneo sobre sua arte. Envie uma imagem e nossa IA, usando sua chave de API do Gemini, fornecerá uma análise detalhada.
         </p>
       </div>
 
@@ -119,18 +119,20 @@ const ArtworkAnalyzerPage: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {isLoadingUrl ? (
+              {isLoadingKeyStatus ? (
                 <Skeleton className="h-40 w-full" />
-              ) : !webhookUrl ? (
+              ) : !apiKeyStatus?.isSet ? (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Configuração Necessária</AlertTitle>
+                  <AlertTitle>Configuração de API Necessária</AlertTitle>
                   <AlertDescription>
-                    A URL do webhook de análise não está configurada. Por favor, vá para a{" "}
-                    <Link to="/admin/settings" className="font-bold underline">
-                      página de configurações
-                    </Link>{" "}
-                    para adicioná-la.
+                    Para usar o analisador, você precisa configurar sua chave da API do Gemini.
+                    <Link to="/settings/api" className="block mt-2">
+                      <Button>
+                        <Key className="mr-2 h-4 w-4" />
+                        Configurar Chave de API
+                      </Button>
+                    </Link>
                   </AlertDescription>
                 </Alert>
               ) : (
@@ -154,11 +156,11 @@ const ArtworkAnalyzerPage: React.FC = () => {
                         <img src={selectedImage} alt="Pré-visualização" className="max-h-64 w-auto mx-auto rounded-lg" />
                       </div>
                     )}
-                    <Button type="submit" className="w-full" disabled={analysisMutation.isPending || !webhookUrl}>
+                    <Button type="submit" className="w-full" disabled={analysisMutation.isPending || !apiKeyStatus?.isSet}>
                       {analysisMutation.isPending ? "Analisando..." : (
                         <>
                           <Sparkles className="mr-2 h-4 w-4" />
-                          Analisar Obra
+                          Analisar Obra com Gemini
                         </>
                       )}
                     </Button>
@@ -171,7 +173,7 @@ const ArtworkAnalyzerPage: React.FC = () => {
           {analysisMutation.isPending && (
             <Card>
               <CardContent className="p-6 text-center">
-                <p>Analisando... Isso pode levar alguns instantes.</p>
+                <p>Analisando com Gemini... Isso pode levar alguns instantes.</p>
                 <Skeleton className="h-4 w-full mt-4" />
                 <Skeleton className="h-4 w-3/4 mt-2" />
               </CardContent>
