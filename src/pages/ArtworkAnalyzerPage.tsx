@@ -23,6 +23,7 @@ import {
 import { Upload, Sparkles, Lightbulb, Palette, MessageSquare, History, Image as ImageIcon, Trash2, AlertCircle, Key } from "lucide-react";
 import { showSuccess, showError } from "@/utils/toast";
 import { Link } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 const formSchema = z.object({
   image: z.instanceof(File).refine(file => file.size > 0, "Por favor, selecione uma imagem."),
@@ -33,7 +34,7 @@ type FormValues = z.infer<typeof formSchema>;
 const ArtworkAnalyzerPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const [latestAnalysis, setLatestAnalysis] = useState<any>(null);
+  const [activeAnalysis, setActiveAnalysis] = useState<any>(null);
   const [deletingAnalysis, setDeletingAnalysis] = useState<any | null>(null);
 
   const form = useForm<FormValues>({
@@ -54,7 +55,7 @@ const ArtworkAnalyzerPage: React.FC = () => {
     mutationFn: (file: File) => analyzeArtwork(file),
     onSuccess: (data) => {
       showSuccess("Análise concluída com sucesso!");
-      setLatestAnalysis(data);
+      setActiveAnalysis(data);
       queryClient.invalidateQueries({ queryKey: ["analysisHistory"] });
     },
     onError: (error) => {
@@ -67,6 +68,9 @@ const ArtworkAnalyzerPage: React.FC = () => {
     onSuccess: () => {
       showSuccess("Análise deletada com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["analysisHistory"] });
+      if (activeAnalysis?.id === deletingAnalysis?.id) {
+        setActiveAnalysis(null);
+      }
       setDeletingAnalysis(null);
     },
     onError: (error) => {
@@ -180,7 +184,7 @@ const ArtworkAnalyzerPage: React.FC = () => {
             </Card>
           )}
 
-          {latestAnalysis && (
+          {activeAnalysis && (
             <Card className="shadow-lg animate-fade-in">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-2xl">
@@ -192,22 +196,22 @@ const ArtworkAnalyzerPage: React.FC = () => {
                 <Alert>
                   <Lightbulb className="h-4 w-4" />
                   <AlertTitle>Título Sugerido</AlertTitle>
-                  <AlertDescription>{latestAnalysis.suggested_title}</AlertDescription>
+                  <AlertDescription>{activeAnalysis.suggested_title}</AlertDescription>
                 </Alert>
                 <Alert>
                   <ImageIcon className="h-4 w-4" />
                   <AlertTitle>Descrição Detalhada</AlertTitle>
-                  <AlertDescription>{latestAnalysis.description}</AlertDescription>
+                  <AlertDescription>{activeAnalysis.description}</AlertDescription>
                 </Alert>
                 <Alert>
                   <Palette className="h-4 w-4" />
                   <AlertTitle>Classificação de Estilo</AlertTitle>
-                  <AlertDescription>{latestAnalysis.style_classification}</AlertDescription>
+                  <AlertDescription>{activeAnalysis.style_classification}</AlertDescription>
                 </Alert>
                 <Alert variant="default" className="bg-teal-50 border-teal-200">
                   <MessageSquare className="h-4 w-4" />
                   <AlertTitle className="text-teal-800">Opinião Construtiva</AlertTitle>
-                  <AlertDescription className="text-teal-700">{latestAnalysis.constructive_feedback}</AlertDescription>
+                  <AlertDescription className="text-teal-700">{activeAnalysis.constructive_feedback}</AlertDescription>
                 </Alert>
               </CardContent>
             </Card>
@@ -233,7 +237,14 @@ const ArtworkAnalyzerPage: React.FC = () => {
             ) : history && history.length > 0 ? (
               <div className="space-y-4">
                 {history.map((item: any) => (
-                  <div key={item.id} className="group flex items-center gap-4 p-3 border rounded-lg hover:bg-gray-50/50 transition-colors">
+                  <div
+                    key={item.id}
+                    onClick={() => setActiveAnalysis(item)}
+                    className={cn(
+                      "group flex items-center gap-4 p-3 border rounded-lg hover:bg-gray-50/50 transition-colors cursor-pointer",
+                      { "bg-teal-50 border-teal-200 dark:bg-teal-900/20 dark:border-teal-800": activeAnalysis?.id === item.id }
+                    )}
+                  >
                     <img src={getPublicUrl(item.image_url)} alt="Obra analisada" className="h-16 w-16 object-cover rounded-md" />
                     <div className="flex-grow">
                       <p className="font-semibold">{item.suggested_title || "Análise"}</p>
