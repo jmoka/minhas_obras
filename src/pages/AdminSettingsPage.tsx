@@ -10,11 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { showSuccess, showError } from "@/utils/toast";
-import { Save, Info, BrainCircuit, MessageCircle } from "lucide-react";
+import { Save, BrainCircuit, MessageCircle } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 
 const settingsSchema = z.object({
-  n8n_webhook_url: z.string().url("Por favor, insira uma URL válida.").or(z.literal("")),
   gemini_tutor_prompt: z.string().min(10, "O prompt do sistema parece muito curto."),
   gemini_model_name: z.string().min(3, "O nome do modelo parece muito curto."),
   admin_whatsapp: z.string().refine(val => /^\+\d{10,15}$/.test(val) || val === '', {
@@ -30,12 +29,10 @@ const AdminSettingsPage: React.FC = () => {
   const { data: settings, isLoading } = useQuery({
     queryKey: ["allAdminSettings"],
     queryFn: async () => {
-      const n8nUrl = await getSetting("n8n_webhook_url");
       const tutorPrompt = await getSetting("gemini_tutor_prompt");
       const modelName = await getSetting("gemini_model_name");
       const adminWhatsApp = await getSetting("admin_whatsapp");
       return { 
-        n8n_webhook_url: n8nUrl, 
         gemini_tutor_prompt: tutorPrompt,
         gemini_model_name: modelName,
         admin_whatsapp: adminWhatsApp,
@@ -46,7 +43,6 @@ const AdminSettingsPage: React.FC = () => {
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
     defaultValues: {
-      n8n_webhook_url: "",
       gemini_tutor_prompt: "",
       gemini_model_name: "gemini-pro",
       admin_whatsapp: "",
@@ -56,7 +52,6 @@ const AdminSettingsPage: React.FC = () => {
   useEffect(() => {
     if (settings) {
       form.reset({
-        n8n_webhook_url: settings.n8n_webhook_url || "",
         gemini_tutor_prompt: settings.gemini_tutor_prompt || "",
         gemini_model_name: settings.gemini_model_name || "gemini-pro",
         admin_whatsapp: settings.admin_whatsapp || "",
@@ -66,7 +61,6 @@ const AdminSettingsPage: React.FC = () => {
 
   const mutation = useMutation({
     mutationFn: async (values: SettingsFormValues) => {
-      await setSetting("n8n_webhook_url", values.n8n_webhook_url);
       await setSetting("gemini_tutor_prompt", values.gemini_tutor_prompt);
       await setSetting("gemini_model_name", values.gemini_model_name);
       await setSetting("admin_whatsapp", values.admin_whatsapp);
@@ -131,33 +125,6 @@ const AdminSettingsPage: React.FC = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Integração com n8n</CardTitle>
-              <CardDescription>
-                Configure a URL do webhook para o Analisador de Obras com IA (legado).
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <FormField
-                control={form.control}
-                name="n8n_webhook_url"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>URL do Webhook de Análise (n8n)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="https://seu-n8n.com/webhook/..." {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Esta é a URL que a plataforma chamará para iniciar a análise da IA.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BrainCircuit className="h-6 w-6 text-purple-600" />
                 Configurações do Gemini
@@ -212,27 +179,6 @@ const AdminSettingsPage: React.FC = () => {
           </Button>
         </form>
       </Form>
-
-      <Card className="bg-blue-50 border-blue-200">
-        <CardHeader className="flex flex-row items-center gap-3">
-          <Info className="h-6 w-6 text-blue-600" />
-          <CardTitle className="text-blue-800">Como funciona o fluxo de dados?</CardTitle>
-        </CardHeader>
-        <CardContent className="text-blue-700 space-y-2 text-sm">
-          <p>
-            <strong>1. Envio:</strong> Quando um usuário envia uma imagem para análise, nossa plataforma envia essa imagem para a URL de webhook que você configurou acima.
-          </p>
-          <p>
-            <strong>2. Processamento:</strong> Seu workflow no n8n recebe a imagem, processa com a IA e prepara os resultados.
-          </p>
-          <p>
-            <strong>3. Retorno:</strong> No final do seu workflow n8n, você deve usar o nó "Respond to Webhook". Ele enviará os resultados da análise de volta para nossa plataforma na mesma requisição.
-          </p>
-          <p className="font-semibold">
-            Por isso, um segundo "webhook de retorno" não é necessário. A comunicação de ida e volta acontece na mesma conexão.
-          </p>
-        </CardContent>
-      </Card>
     </div>
   );
 };

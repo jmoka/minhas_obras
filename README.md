@@ -4,7 +4,7 @@
 
 ## ✨ Funcionalidades com IA (Google Gemini)
 
-A plataforma agora conta com ferramentas de inteligência artificial para auxiliar os artistas, utilizando a API do Google Gemini. Para usar essas funcionalidades, **cada usuário precisa fornecer sua própria chave de API**.
+A plataforma conta com ferramentas de inteligência artificial para auxiliar os artistas, utilizando a API do Google Gemini. Para usar essas funcionalidades, **cada usuário precisa fornecer sua própria chave de API**.
 
 -   **Analisador de Obras**: Envie uma imagem da sua arte e receba uma análise detalhada sobre título, descrição, estilo e feedback construtivo.
 -   **Tutor de Arte**: Converse com um tutor de IA para tirar dúvidas, pedir dicas sobre técnicas, materiais ou inspiração.
@@ -42,9 +42,7 @@ A plataforma agora conta com ferramentas de inteligência artificial para auxili
 
 #### `settings` (Configurações do Admin)
 - `key` (text, PK)
-- `value` (text) - Armazena configurações globais como a URL do webhook n8n e prompts do sistema para a IA.
-
-📖 **Documentação da API de Análise**: [docs/ARTWORK_ANALYSIS_API.md](./docs/ARTWORK_ANALYSIS_API.md)
+- `value` (text) - Armazena configurações globais como prompts do sistema para a IA.
 
 ## 🚀 Configuração Inicial
 
