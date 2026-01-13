@@ -10,13 +10,16 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { showSuccess, showError } from "@/utils/toast";
-import { Save, Info, BrainCircuit } from "lucide-react";
+import { Save, Info, BrainCircuit, MessageCircle } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 
 const settingsSchema = z.object({
   n8n_webhook_url: z.string().url("Por favor, insira uma URL válida.").or(z.literal("")),
   gemini_tutor_prompt: z.string().min(10, "O prompt do sistema parece muito curto."),
   gemini_model_name: z.string().min(3, "O nome do modelo parece muito curto."),
+  admin_whatsapp: z.string().refine(val => /^\+\d{10,15}$/.test(val) || val === '', {
+    message: "Formato inválido. Use o formato internacional, ex: +5511999999999"
+  }),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -30,10 +33,12 @@ const AdminSettingsPage: React.FC = () => {
       const n8nUrl = await getSetting("n8n_webhook_url");
       const tutorPrompt = await getSetting("gemini_tutor_prompt");
       const modelName = await getSetting("gemini_model_name");
+      const adminWhatsApp = await getSetting("admin_whatsapp");
       return { 
         n8n_webhook_url: n8nUrl, 
         gemini_tutor_prompt: tutorPrompt,
-        gemini_model_name: modelName 
+        gemini_model_name: modelName,
+        admin_whatsapp: adminWhatsApp,
       };
     },
   });
@@ -44,6 +49,7 @@ const AdminSettingsPage: React.FC = () => {
       n8n_webhook_url: "",
       gemini_tutor_prompt: "",
       gemini_model_name: "gemini-pro",
+      admin_whatsapp: "",
     },
   });
 
@@ -53,6 +59,7 @@ const AdminSettingsPage: React.FC = () => {
         n8n_webhook_url: settings.n8n_webhook_url || "",
         gemini_tutor_prompt: settings.gemini_tutor_prompt || "",
         gemini_model_name: settings.gemini_model_name || "gemini-pro",
+        admin_whatsapp: settings.admin_whatsapp || "",
       });
     }
   }, [settings, form]);
@@ -62,6 +69,7 @@ const AdminSettingsPage: React.FC = () => {
       await setSetting("n8n_webhook_url", values.n8n_webhook_url);
       await setSetting("gemini_tutor_prompt", values.gemini_tutor_prompt);
       await setSetting("gemini_model_name", values.gemini_model_name);
+      await setSetting("admin_whatsapp", values.admin_whatsapp);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["allAdminSettings"] });
@@ -91,6 +99,36 @@ const AdminSettingsPage: React.FC = () => {
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageCircle className="h-6 w-6 text-green-600" />
+                Contato do Administrador
+              </CardTitle>
+              <CardDescription>
+                Número de WhatsApp para solicitações de desbloqueio de novos usuários.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FormField
+                control={form.control}
+                name="admin_whatsapp"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>WhatsApp do Administrador</FormLabel>
+                    <FormControl>
+                      <Input placeholder="+5511999999999" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Insira o número completo no formato internacional (código do país + DDD + número).
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Integração com n8n</CardTitle>

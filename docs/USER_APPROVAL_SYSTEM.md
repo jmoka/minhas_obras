@@ -57,10 +57,7 @@ Redirecionado para /welcome
    da minha conta.
    ```
 
-2. Número do admin é definido em `.env`:
-   ```
-   VITE_ADMIN_WHATSAPP=+5511999999999
-   ```
+2. Número do admin é configurado na página de Configurações do Admin.
 
 ### 4. Aprovação pelo Admin
 
@@ -150,24 +147,19 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
    - Login verifica status de bloqueio
    - Redireciona conforme status
 
-3. **`.env`**
-   - Adicionada variável `VITE_ADMIN_WHATSAPP`
+3. **`src/pages/AdminSettingsPage.tsx`**
+   - Adicionado campo para configurar o WhatsApp do administrador.
 
 ## ⚙️ Configuração Inicial
 
-### 1. Atualizar Variável de Ambiente
+### 1. Configurar WhatsApp do Administrador
 
-Edite `.env` e substitua pelo número real do admin:
-
-```env
-VITE_ADMIN_WHATSAPP=+5511999999999
-```
-
-**Formato**: Código do país + DDD + número (sem espaços, apenas números e +)
-
-Exemplos:
-- Brasil: `+5511987654321`
-- Portugal: `+351912345678`
+1.  Acesse a página de **Configurações de Administrador** (`/admin/settings`).
+2.  No campo **"WhatsApp do Administrador"**, insira o número de telefone completo.
+3.  **Formato obrigatório**: Código do país + DDD + número (sem espaços, apenas números e o sinal `+`).
+    -   Exemplo Brasil: `+5511987654321`
+    -   Exemplo Portugal: `+351912345678`
+4.  Salve as configurações.
 
 ### 2. Executar Migration
 
@@ -286,8 +278,8 @@ Edite `src/pages/WelcomePage.tsx`:
 
 ### Botão WhatsApp não abre corretamente
 
-**Causa**: Número de telefone inválido  
-**Solução**: Verifique formato em `.env`:
+**Causa**: Número de telefone inválido ou não configurado.
+**Solução**: Verifique o formato na página de Configurações do Admin:
 - ✅ `+5511999999999` (correto)
 - ❌ `11 9 9999-9999` (incorreto)
 - ❌ `(11) 99999-9999` (incorreto)

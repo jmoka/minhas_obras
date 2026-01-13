@@ -5,12 +5,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Loader2, MessageCircle, CheckCircle, Sparkles } from "lucide-react";
 import { showError } from "@/utils/toast";
+import { useQuery } from "@tanstack/react-query";
+import { getSetting } from "@/integrations/supabase/api";
 
 const WelcomePage: React.FC = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState<string>("Artista");
   const [isBlocked, setIsBlocked] = useState(true);
+
+  const { data: adminWhatsApp, isLoading: isLoadingWhatsApp } = useQuery({
+    queryKey: ["adminWhatsAppSetting"],
+    queryFn: () => getSetting("admin_whatsapp"),
+  });
 
   useEffect(() => {
     checkUserStatus();
@@ -51,9 +58,13 @@ const WelcomePage: React.FC = () => {
   };
 
   const handleWhatsAppClick = () => {
-    const adminWhatsApp = import.meta.env.VITE_ADMIN_WHATSAPP || "+5511999999999";
+    const adminPhoneNumber = adminWhatsApp || "+5511999999999"; // Fallback
+    if (!adminPhoneNumber) {
+      showError("O número de contato do administrador não está configurado.");
+      return;
+    }
     const message = `Olá! Sou ${userName} e acabei de me cadastrar na plataforma Minhas Artes. Gostaria de solicitar o desbloqueio da minha conta.`;
-    const whatsappUrl = `https://wa.me/${adminWhatsApp.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`;
+    const whatsappUrl = `https://wa.me/${adminPhoneNumber.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, "_blank");
   };
 
@@ -115,8 +126,9 @@ const WelcomePage: React.FC = () => {
                   onClick={handleWhatsAppClick}
                   className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-8 text-xl gap-3 shadow-2xl animate-pulse hover:animate-none transition-all hover:scale-105"
                   size="lg"
+                  disabled={isLoadingWhatsApp}
                 >
-                  <MessageCircle className="h-7 w-7" />
+                  {isLoadingWhatsApp ? <Loader2 className="h-7 w-7 animate-spin" /> : <MessageCircle className="h-7 w-7" />}
                   Solicitar Desbloqueio via WhatsApp
                   <span className="ml-2 text-2xl">→</span>
                 </Button>

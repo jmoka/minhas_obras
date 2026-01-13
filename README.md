@@ -56,15 +56,13 @@ A plataforma agora conta com ferramentas de inteligência artificial para auxili
 
 **Configuração rápida**:
 
-1. Edite `.env` e configure o WhatsApp do admin:
-   ```env
-   VITE_ADMIN_WHATSAPP=+5511999999999
-   ```
+1.  Acesse a página de **Configurações de Administrador** (`/admin/settings`).
+2.  Configure o **WhatsApp do Administrador** no formato internacional (ex: `+5511999999999`).
 
-2. Execute a migration no Supabase SQL Editor:
-   ```sql
-   -- Cole: supabase/migrations/20260112_set_default_blocked.sql
-   ```
+3.  Execute a migration no Supabase SQL Editor:
+    ```sql
+    -- Cole: supabase/migrations/20260112_set_default_blocked.sql
+    ```
 
 ---
 
