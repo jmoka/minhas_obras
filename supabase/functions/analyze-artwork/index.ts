@@ -20,6 +20,8 @@ function normalizeString(str: string): string {
 
 // Helper function to get a value from an object using multiple possible keys
 function getFieldValue(obj: any, possibleKeys: string[]): string | null {
+  if (typeof obj !== 'object' || obj === null) return null;
+  
   const normalizedObjKeys: { [key: string]: string } = {};
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
@@ -132,14 +134,17 @@ serve(async (req) => {
     
     let rawData;
     if (Array.isArray(analysisResult) && analysisResult.length > 0) {
+      console.log(`[${functionName}] ✅ Resposta é um array. Extraindo o primeiro elemento.`);
       rawData = analysisResult[0];
     } else if (typeof analysisResult === 'object' && analysisResult !== null) {
+      console.log(`[${functionName}] ✅ Resposta é um objeto.`);
       rawData = analysisResult;
     } else {
       throw new Error("A resposta da análise da IA está em um formato inesperado ou está vazia.");
     }
     
     const resultData = rawData.json || rawData;
+    console.log(`[${functionName}] Dados extraídos para análise:`, JSON.stringify(resultData, null, 2));
 
     const insertPayload = {
       user_id: user.id,
