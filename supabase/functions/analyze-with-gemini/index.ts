@@ -57,8 +57,13 @@ serve(async (req) => {
     );
 
     const apiKey = await getApiKey(supabaseAdmin, user.id);
+
+    const { data: modelData } = await supabaseAdmin
+      .from('settings').select('value').eq('key', 'gemini_model_name').single();
+    const modelName = modelData?.value || "gemini-pro-vision";
+
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-pro-vision" });
+    const model = genAI.getGenerativeModel({ model: modelName });
 
     const prompt = `
       Você é um crítico de arte especialista. Analise a imagem fornecida e retorne um JSON com as seguintes chaves: "suggested_title", "description", "style_classification", "constructive_feedback".

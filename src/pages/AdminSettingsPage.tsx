@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 const settingsSchema = z.object({
   n8n_webhook_url: z.string().url("Por favor, insira uma URL válida.").or(z.literal("")),
   gemini_tutor_prompt: z.string().min(10, "O prompt do sistema parece muito curto."),
+  gemini_model_name: z.string().min(3, "O nome do modelo parece muito curto."),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -28,7 +29,12 @@ const AdminSettingsPage: React.FC = () => {
     queryFn: async () => {
       const n8nUrl = await getSetting("n8n_webhook_url");
       const tutorPrompt = await getSetting("gemini_tutor_prompt");
-      return { n8n_webhook_url: n8nUrl, gemini_tutor_prompt: tutorPrompt };
+      const modelName = await getSetting("gemini_model_name");
+      return { 
+        n8n_webhook_url: n8nUrl, 
+        gemini_tutor_prompt: tutorPrompt,
+        gemini_model_name: modelName 
+      };
     },
   });
 
@@ -37,6 +43,7 @@ const AdminSettingsPage: React.FC = () => {
     values: {
       n8n_webhook_url: settings?.n8n_webhook_url || "",
       gemini_tutor_prompt: settings?.gemini_tutor_prompt || "",
+      gemini_model_name: settings?.gemini_model_name || "gemini-pro-vision",
     },
     resetOptions: {
       keepDirtyValues: true,
@@ -47,6 +54,7 @@ const AdminSettingsPage: React.FC = () => {
     mutationFn: async (values: SettingsFormValues) => {
       await setSetting("n8n_webhook_url", values.n8n_webhook_url);
       await setSetting("gemini_tutor_prompt", values.gemini_tutor_prompt);
+      await setSetting("gemini_model_name", values.gemini_model_name);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["allAdminSettings"] });
@@ -80,7 +88,7 @@ const AdminSettingsPage: React.FC = () => {
             <CardHeader>
               <CardTitle>Integração com n8n</CardTitle>
               <CardDescription>
-                Configure a URL do webhook para o Analisador de Obras com IA.
+                Configure a URL do webhook para o Analisador de Obras com IA (legado).
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -107,19 +115,35 @@ const AdminSettingsPage: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BrainCircuit className="h-6 w-6 text-purple-600" />
-                Tutor de Arte (Gemini)
+                Configurações do Gemini
               </CardTitle>
               <CardDescription>
-                Defina a personalidade e as instruções do seu assistente de IA.
+                Defina o modelo e a personalidade do seu assistente de IA.
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-6">
+              <FormField
+                control={form.control}
+                name="gemini_model_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome do Modelo Gemini</FormLabel>
+                    <FormControl>
+                      <Input placeholder="ex: gemini-pro-vision" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Modelos recomendados: <code>gemini-pro-vision</code> (para chat e análise de imagem) ou <code>gemini-1.0-pro</code>.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <FormField
                 control={form.control}
                 name="gemini_tutor_prompt"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Prompt do Sistema</FormLabel>
+                    <FormLabel>Prompt do Sistema (Personalidade do Tutor)</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="Ex: Você é um professor de arte amigável e experiente. Seu nome é 'Maestro'..."

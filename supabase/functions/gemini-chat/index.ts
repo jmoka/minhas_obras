@@ -37,7 +37,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // 3. Buscar chave de API do usuário e prompt do sistema
+    // 3. Buscar chave de API, prompt do sistema e nome do modelo
     const { data: apiKeyData, error: apiKeyError } = await supabaseAdmin
       .from('user_api_keys').select('api_key').eq('user_id', user.id).single();
     if (apiKeyError || !apiKeyData?.api_key) throw new Error("Chave de API do Gemini não configurada.");
@@ -46,8 +46,12 @@ serve(async (req) => {
       .from('settings').select('value').eq('key', 'gemini_tutor_prompt').single();
     if (promptError || !promptData?.value) throw new Error("Prompt do sistema para o tutor não configurado pelo admin.");
 
+    const { data: modelData } = await supabaseAdmin
+      .from('settings').select('value').eq('key', 'gemini_model_name').single();
+
     const apiKey = apiKeyData.api_key;
     const systemPrompt = promptData.value;
+    const modelName = modelData?.value || "gemini-pro-vision"; // Usa o modelo configurado ou um fallback
 
     // 4. Buscar histórico da conversa, se houver
     let currentSessionId = sessionId;
@@ -68,7 +72,7 @@ serve(async (req) => {
     // 5. Interagir com a API do Gemini
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-pro-vision", // CORREÇÃO: Usando o modelo de visão que é conhecido por funcionar
+      model: modelName,
       systemInstruction: systemPrompt,
     });
     const chat = model.startChat({ history });
