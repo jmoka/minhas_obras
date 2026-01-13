@@ -48,7 +48,10 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      throw new Error("Usuário não autenticado.");
+      return new Response(JSON.stringify({ error: "Usuário não autenticado." }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
     const token = authHeader.replace("Bearer ", "");
     const supabaseAnon = createClient(
@@ -59,7 +62,10 @@ serve(async (req) => {
 
     const { data: { user }, error: userError } = await supabaseAnon.auth.getUser();
     if (userError || !user) {
-      throw new Error("Falha na autenticação.");
+      return new Response(JSON.stringify({ error: "Falha na autenticação. Por favor, faça login novamente." }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const supabaseAdmin = createClient(
@@ -122,10 +128,7 @@ serve(async (req) => {
     }
 
     const analysisResult = await n8nResponse.json();
-    console.log(`[${functionName}] ====== RESPOSTA BRUTA DO N8N ======`);
-    console.log(`[${functionName}] Tipo: ${typeof analysisResult}, É Array: ${Array.isArray(analysisResult)}`);
-    console.log(`[${functionName}] Resposta completa:`, JSON.stringify(analysisResult, null, 2));
-
+    
     let rawData;
     if (Array.isArray(analysisResult) && analysisResult.length > 0) {
       rawData = analysisResult[0];
@@ -135,13 +138,7 @@ serve(async (req) => {
       throw new Error("A resposta da análise da IA está em um formato inesperado ou está vazia.");
     }
     
-    console.log(`[${functionName}] ====== RAW DATA ======`);
-    console.log(`[${functionName}] rawData:`, JSON.stringify(rawData, null, 2));
-
     const resultData = rawData.json || rawData;
-    console.log(`[${functionName}] ====== RESULT DATA (após verificar .json) ======`);
-    console.log(`[${functionName}] resultData:`, JSON.stringify(resultData, null, 2));
-    console.log(`[${functionName}] Chaves presentes:`, Object.keys(resultData));
 
     const insertPayload = {
       user_id: user.id,
@@ -152,11 +149,9 @@ serve(async (req) => {
       constructive_feedback: getFieldValue(resultData, ["Uma opinião construtiva visando a melhoria do artista", "Uma opiniao construtiva visando a melhoria do artista", "Opinião Construtiva", "Opiniao Construtiva", "Feedback"]),
     };
     
-    console.log(`[${functionName}] ====== INSERT PAYLOAD ======`);
-    console.log(`[${functionName}] Payload para inserção:`, JSON.stringify(insertPayload, null, 2));
-
-    if (insertPayload.suggested_title === "Imagem Inválida para Análise") {
-      console.warn(`[${functionName}] n8n retornou um erro de imagem inválida para o usuário ${user.id}.`);
+    const titleCheck = (insertPayload.suggested_title || "").toLowerCase();
+    if (titleCheck.includes("inválida") || titleCheck.includes("pendente")) {
+      console.warn(`[${functionName}] n8n retornou um erro de imagem inválida/pendente para o usuário ${user.id}.`);
       await supabaseAdmin.storage.from(BUCKET_NAME).remove([filePath]);
       throw new Error("A IA não conseguiu processar o arquivo. Por favor, verifique se é uma imagem válida e tente novamente.");
     }
