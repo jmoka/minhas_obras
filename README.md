@@ -2,7 +2,14 @@
 
 ## Sistema de galeria de arte com cadastro de usuários, obras, galerias de imagens e funcionalidades de IA com Google Gemini.
 
-## ✨ Funcionalidades com IA (Google Gemini)
+## ✨ Funcionalidades Principais
+
+-   **Galeria Pública e Pessoal**: Explore obras de todos os artistas ou gerencie sua própria coleção particular.
+-   **Perfis de Artista**: Cada artista tem uma página pública para exibir seu portfólio e biografia.
+-   **Sistema de Aprovação de Usuários**: Novos usuários são bloqueados por padrão e precisam de aprovação do admin, garantindo uma comunidade segura e qualificada.
+-   **Sistema de Doação**: Permite que os usuários apoiem a plataforma através de doações via PIX, com chave configurável pelo administrador.
+
+### Funcionalidades com IA (Google Gemini)
 
 A plataforma conta com ferramentas de inteligência artificial para auxiliar os artistas, utilizando a API do Google Gemini. Para usar essas funcionalidades, **cada usuário precisa fornecer sua própria chave de API**.
 
@@ -42,7 +49,7 @@ A plataforma conta com ferramentas de inteligência artificial para auxiliar os 
 
 #### `settings` (Configurações do Admin)
 - `key` (text, PK)
-- `value` (text) - Armazena configurações globais como prompts do sistema para a IA.
+- `value` (text) - Armazena configurações globais como prompts do sistema para a IA, **chave PIX para doações** e WhatsApp do admin.
 
 ## 🚀 Configuração Inicial
 
@@ -56,8 +63,9 @@ A plataforma conta com ferramentas de inteligência artificial para auxiliar os 
 
 1.  Acesse a página de **Configurações de Administrador** (`/admin/settings`).
 2.  Configure o **WhatsApp do Administrador** no formato internacional (ex: `+5511999999999`).
+3.  Configure a **Chave PIX** para habilitar o sistema de doações.
 
-3.  Execute a migration no Supabase SQL Editor:
+4.  Execute a migration no Supabase SQL Editor:
     ```sql
     -- Cole: supabase/migrations/20260112_set_default_blocked.sql
     ```
@@ -110,6 +118,12 @@ npm run dev
 4. A Edge Function `gemini-chat` usa a chave do usuário e o prompt do sistema (definido pelo admin) para gerar uma resposta.
 5. A conversa é salva e exibida.
 
+### Doação para a Plataforma
+1. Admin configura a chave PIX em `/admin/settings`.
+2. Usuário clica no botão "Apoie a Plataforma" na página inicial.
+3. É redirecionado para a página `/donate`.
+4. Copia a chave PIX, realiza a doação e envia o comprovante pelo WhatsApp do admin.
+
 ### Cadastro e Aprovação de Novo Usuário
 - Novos usuários são bloqueados e redirecionados para `/welcome`, onde podem solicitar aprovação via WhatsApp.
 
@@ -136,6 +150,7 @@ minhas_artes/
 │   │   ├── ArtTutorPage.tsx        # Tutor de Arte
 │   │   ├── ApiSettingsPage.tsx     # Configuração de API do usuário
 │   │   ├── AdminSettingsPage.tsx   # Configurações do admin
+│   │   ├── DonationPage.tsx        # Página de Doação
 │   │   └── ...
 │   ├── integrations/
 │   │   └── supabase/
@@ -169,42 +184,24 @@ minhas_artes/
 
 ## 🎉 Correções e Implementações Recentes
 
+### v1.5.0 - Sistema de Doação (2026-01-13)
+
+✅ **Nova funcionalidade**: Adicionada página de doação para apoiar a plataforma.
+- Admin pode configurar chave PIX e WhatsApp nas configurações.
+- Usuários podem copiar a chave e enviar comprovantes facilmente.
+
 ### v1.4.0 - Correção do Modelo Gemini (2026-01-13)
 
-✅ **Problema resolvido**: Erro 500 (`404 Not Found`) ao chamar a API do Gemini porque o modelo `gemini-1.5-flash` não estava disponível.
-
-**Implementações:**
-- O modelo padrão de fallback nas Edge Functions foi alterado para `gemini-pro`, que é mais estável e amplamente disponível.
-- A página de configurações do admin foi atualizada para refletir esta recomendação.
-
-**Arquivos modificados:**
-- `supabase/functions/gemini-chat/index.ts`
-- `supabase/functions/analyze-with-gemini/index.ts`
-- `src/pages/AdminSettingsPage.tsx`
-
-**Como verificar se está funcionando:**
-- O chat com o Tutor de IA e o Analisador de Obras devem funcionar corretamente, mesmo que um modelo indisponível esteja configurado, pois o sistema usará `gemini-pro` como fallback.
-
----
+✅ **Problema resolvido**: Erro 500 (`404 Not Found`) ao chamar a API do Gemini.
+- Modelo de fallback alterado para `gemini-pro` para maior estabilidade.
 
 ### v1.3.0 - Correção da Persistência de Análise de Obras com IA (2026-01-13)
 
 ✅ **Problema resolvido**: Campos da análise de imagens não estavam sendo persistidos no banco de dados.
 
-**Implementações:**
-- Normalização robusta de campos, logging detalhado e validação de dados na Edge Function `analyze-artwork`.
-
-📖 **Documentação da API**: [docs/ARTWORK_ANALYSIS_API.md](./docs/ARTWORK_ANALYSIS_API.md)
-
----
-
 ### v1.2.0 - Sistema de Aprovação de Usuários (2026-01-12)
 
 ✅ **Nova funcionalidade**: Novos usuários precisam de aprovação do admin.
-
-📖 **Documentação completa**: [docs/USER_APPROVAL_SYSTEM.md](./docs/USER_APPROVAL_SYSTEM.md)
-
----
 
 ### v1.1.0 - Correção de Recuperação de Senha (2026-01-12)
 
