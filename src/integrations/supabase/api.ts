@@ -757,3 +757,47 @@ export const getUserApiKeyStatus = async (): Promise<{ isSet: boolean }> => {
 
   return { isSet: !!data?.api_key };
 };
+
+// Art Tutor Chat Functions
+export const fetchChatSessions = async () => {
+  const { data, error } = await supabase
+    .from("chat_sessions")
+    .select("id, title, created_at")
+    .order("created_at", { ascending: false });
+  if (error) throw new Error("Erro ao buscar sessões de chat.");
+  return data;
+};
+
+export const fetchChatMessages = async (sessionId: string) => {
+  const { data, error } = await supabase
+    .from("chat_messages")
+    .select("id, role, content, created_at")
+    .eq("session_id", sessionId)
+    .order("created_at", { ascending: true });
+  if (error) throw new Error("Erro ao buscar mensagens.");
+  return data;
+};
+
+export const sendChatMessageToTutor = async (sessionId: string | null, message: string) => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error("Usuário não autenticado.");
+
+  const { data, error } = await supabase.functions.invoke("gemini-chat", {
+    body: { sessionId, message },
+    headers: {
+      'Authorization': `Bearer ${session.access_token}`,
+    },
+  });
+
+  if (error) throw error;
+  if (data.error) throw new Error(data.error);
+  return data;
+};
+
+export const deleteChatSession = async (sessionId: string) => {
+  const { error } = await supabase
+    .from("chat_sessions")
+    .delete()
+    .eq("id", sessionId);
+  if (error) throw new Error("Erro ao deletar sessão.");
+};

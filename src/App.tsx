@@ -24,6 +24,7 @@ import TopicPage from "./pages/TopicPage";
 import ArtworkAnalyzerPage from "./pages/ArtworkAnalyzerPage";
 import AdminSettingsPage from "./pages/AdminSettingsPage";
 import ApiSettingsPage from "./pages/ApiSettingsPage";
+import ArtTutorPage from "./pages/ArtTutorPage";
 
 const queryClient = new QueryClient();
 
@@ -97,6 +98,11 @@ const App = () => (
               <Route path="/analyzer" element={
                 <ProtectedRoute requireUnblocked={true}>
                   <ArtworkAnalyzerPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/tutor" element={
+                <ProtectedRoute requireUnblocked={true}>
+                  <ArtTutorPage />
                 </ProtectedRoute>
               } />
               
