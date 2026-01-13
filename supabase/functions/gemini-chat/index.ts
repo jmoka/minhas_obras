@@ -68,7 +68,7 @@ serve(async (req) => {
     // 5. Interagir com a API do Gemini
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-pro",
+      model: "gemini-1.0-pro", // CORREÇÃO: Usando um nome de modelo estável
       systemInstruction: systemPrompt,
     });
     const chat = model.startChat({ history });
