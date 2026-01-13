@@ -49,9 +49,32 @@ const ArtTutorPage: React.FC = () => {
     enabled: !!activeSessionId,
   });
 
-  // Mutation for sending a message
+  // Mutation for sending a message with optimistic updates
   const sendMessageMutation = useMutation({
     mutationFn: (values: { message: string }) => sendChatMessageToTutor(activeSessionId, values.message),
+    onMutate: async (newMessage) => {
+      const queryKey = ["chatMessages", activeSessionId];
+      await queryClient.cancelQueries({ queryKey });
+      const previousMessages = queryClient.getQueryData(queryKey);
+
+      queryClient.setQueryData(queryKey, (old: any[] | undefined) => {
+        const optimisticMessage = {
+          id: `temp-${Date.now()}`,
+          role: 'user',
+          content: newMessage.message,
+          created_at: new Date().toISOString(),
+        };
+        return old ? [...old, optimisticMessage] : [optimisticMessage];
+      });
+
+      return { previousMessages, queryKey };
+    },
+    onError: (err, _newMessage, context) => {
+      if (context?.previousMessages) {
+        queryClient.setQueryData(context.queryKey, context.previousMessages);
+      }
+      showError(err.message);
+    },
     onSuccess: (data) => {
       if (!activeSessionId) {
         setActiveSessionId(data.sessionId);
@@ -59,7 +82,6 @@ const ArtTutorPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["chatMessages", data.sessionId] });
       queryClient.invalidateQueries({ queryKey: ["chatSessions"] });
     },
-    onError: (error) => showError(error.message),
   });
 
   // Mutation for deleting a session
@@ -196,7 +218,7 @@ const ArtTutorPage: React.FC = () => {
                   render={({ field }) => (
                     <FormItem className="flex-grow">
                       <FormControl>
-                        <Input placeholder="Pergunte algo ao tutor de arte..." {...field} autoComplete="off" disabled={!activeSessionId && sessions?.length > 0 && !isLoadingSessions} />
+                        <Input placeholder="Pergunte algo ao tutor de arte..." {...field} autoComplete="off" disabled={sendMessageMutation.isPending} />
                       </FormControl>
                     </FormItem>
                   )}
