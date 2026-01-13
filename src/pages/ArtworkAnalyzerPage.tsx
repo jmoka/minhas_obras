@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { analyzeArtwork, fetchAnalysisHistory, getPublicUrl, deleteAnalysis, getUserApiKeyStatus } from "@/integrations/supabase/api";
+import { analyzeArtwork, fetchAnalysisHistory, getPublicUrl, deleteAnalysis, getUserApiKeyStatus, fetchObras, updateObraDetails } from "@/integrations/supabase/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,10 +20,20 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Upload, Sparkles, Lightbulb, Palette, MessageSquare, History, Image as ImageIcon, Trash2, AlertCircle, Key } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Upload, Sparkles, Lightbulb, Palette, MessageSquare, History, Image as ImageIcon, Trash2, AlertCircle, Key, Check, Link as LinkIcon } from "lucide-react";
 import { showSuccess, showError } from "@/utils/toast";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const formSchema = z.object({
   image: z.instanceof(File).refine(file => file.size > 0, "Por favor, selecione uma imagem."),
@@ -33,9 +43,12 @@ type FormValues = z.infer<typeof formSchema>;
 
 const ArtworkAnalyzerPage: React.FC = () => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [activeAnalysis, setActiveAnalysis] = useState<any>(null);
   const [deletingAnalysis, setDeletingAnalysis] = useState<any | null>(null);
+  const [isApplyDialogOpen, setIsApplyDialogOpen] = useState(false);
+  const [selectedObraId, setSelectedObraId] = useState<string | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -49,6 +62,12 @@ const ArtworkAnalyzerPage: React.FC = () => {
   const { data: history, isLoading: isLoadingHistory } = useQuery({
     queryKey: ["analysisHistory"],
     queryFn: fetchAnalysisHistory,
+  });
+
+  const { data: myObras, isLoading: isLoadingMyObras } = useQuery({
+    queryKey: ["myObras"],
+    queryFn: fetchObras,
+    enabled: !!apiKeyStatus?.isSet,
   });
 
   const analysisMutation = useMutation({
@@ -79,6 +98,22 @@ const ArtworkAnalyzerPage: React.FC = () => {
     },
   });
 
+  const updateObraMutation = useMutation({
+    mutationFn: (data: { obraId: string; details: { titulo: string; descricao: string } }) =>
+      updateObraDetails(data.obraId, data.details),
+    onSuccess: (_, variables) => {
+      showSuccess("Obra atualizada com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["obras"] });
+      queryClient.invalidateQueries({ queryKey: ["obra", variables.obraId] });
+      setIsApplyDialogOpen(false);
+      setSelectedObraId(null);
+      navigate(`/obras/${variables.obraId}`);
+    },
+    onError: (error) => {
+      showError(`Erro ao atualizar obra: ${error.message}`);
+    },
+  });
+
   const onSubmit = (values: FormValues) => {
     analysisMutation.mutate(values.image);
   };
@@ -98,6 +133,18 @@ const ArtworkAnalyzerPage: React.FC = () => {
   const handleDeleteConfirm = () => {
     if (deletingAnalysis) {
       deleteMutation.mutate(deletingAnalysis);
+    }
+  };
+
+  const handleApplyAnalysis = () => {
+    if (selectedObraId && activeAnalysis) {
+      updateObraMutation.mutate({
+        obraId: selectedObraId,
+        details: {
+          titulo: activeAnalysis.suggested_title,
+          descricao: activeAnalysis.description,
+        },
+      });
     }
   };
 
@@ -185,36 +232,100 @@ const ArtworkAnalyzerPage: React.FC = () => {
           )}
 
           {activeAnalysis && (
-            <Card className="shadow-lg animate-fade-in">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-2xl">
-                  <Sparkles className="h-6 w-6 text-yellow-500" />
-                  2. Resultado da Análise
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <Alert>
-                  <Lightbulb className="h-4 w-4" />
-                  <AlertTitle>Título Sugerido</AlertTitle>
-                  <AlertDescription>{activeAnalysis.suggested_title}</AlertDescription>
-                </Alert>
-                <Alert>
-                  <ImageIcon className="h-4 w-4" />
-                  <AlertTitle>Descrição Detalhada</AlertTitle>
-                  <AlertDescription>{activeAnalysis.description}</AlertDescription>
-                </Alert>
-                <Alert>
-                  <Palette className="h-4 w-4" />
-                  <AlertTitle>Classificação de Estilo</AlertTitle>
-                  <AlertDescription>{activeAnalysis.style_classification}</AlertDescription>
-                </Alert>
-                <Alert variant="default" className="bg-teal-50 border-teal-200">
-                  <MessageSquare className="h-4 w-4" />
-                  <AlertTitle className="text-teal-800">Opinião Construtiva</AlertTitle>
-                  <AlertDescription className="text-teal-700">{activeAnalysis.constructive_feedback}</AlertDescription>
-                </Alert>
-              </CardContent>
-            </Card>
+            <div className="space-y-8">
+              <Card className="shadow-lg animate-fade-in">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-2xl">
+                    <Sparkles className="h-6 w-6 text-yellow-500" />
+                    2. Resultado da Análise
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <Alert>
+                    <Lightbulb className="h-4 w-4" />
+                    <AlertTitle>Título Sugerido</AlertTitle>
+                    <AlertDescription>{activeAnalysis.suggested_title}</AlertDescription>
+                  </Alert>
+                  <Alert>
+                    <ImageIcon className="h-4 w-4" />
+                    <AlertTitle>Descrição Detalhada</AlertTitle>
+                    <AlertDescription>{activeAnalysis.description}</AlertDescription>
+                  </Alert>
+                  <Alert>
+                    <Palette className="h-4 w-4" />
+                    <AlertTitle>Classificação de Estilo</AlertTitle>
+                    <AlertDescription>{activeAnalysis.style_classification}</AlertDescription>
+                  </Alert>
+                  <Alert variant="default" className="bg-teal-50 border-teal-200">
+                    <MessageSquare className="h-4 w-4" />
+                    <AlertTitle className="text-teal-800">Opinião Construtiva</AlertTitle>
+                    <AlertDescription className="text-teal-700">{activeAnalysis.constructive_feedback}</AlertDescription>
+                  </Alert>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-lg animate-fade-in">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-2xl">
+                    <LinkIcon className="h-6 w-6 text-blue-600" />
+                    3. Próximo Passo
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Dialog open={isApplyDialogOpen} onOpenChange={setIsApplyDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button className="w-full">
+                        <Check className="mr-2 h-4 w-4" />
+                        Usar esta Análise em uma Obra
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[600px]">
+                      <DialogHeader>
+                        <DialogTitle>Aplicar Análise à Obra</DialogTitle>
+                        <DialogDescription>
+                          Selecione uma de suas obras para atualizar o título e a descrição com o conteúdo gerado pela IA.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <ScrollArea className="max-h-[50vh] my-4">
+                        <div className="space-y-2 pr-4">
+                          {isLoadingMyObras ? (
+                            <p>Carregando suas obras...</p>
+                          ) : myObras && myObras.length > 0 ? (
+                            myObras.map((obra) => (
+                              <div
+                                key={obra.id}
+                                onClick={() => setSelectedObraId(obra.id)}
+                                className={cn(
+                                  "flex items-center gap-4 p-3 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer",
+                                  { "ring-2 ring-primary bg-muted": selectedObraId === obra.id }
+                                )}
+                              >
+                                <img src={getPublicUrl(obra.img)} alt={obra.titulo || ""} className="h-16 w-16 object-cover rounded-md" />
+                                <div className="flex-grow">
+                                  <p className="font-semibold">{obra.titulo || "Sem Título"}</p>
+                                  <p className="text-sm text-muted-foreground line-clamp-2">{obra.descricao || "Sem descrição"}</p>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-center text-muted-foreground p-8">Você não possui nenhuma obra cadastrada.</p>
+                          )}
+                        </div>
+                      </ScrollArea>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsApplyDialogOpen(false)}>Cancelar</Button>
+                        <Button
+                          onClick={handleApplyAnalysis}
+                          disabled={!selectedObraId || updateObraMutation.isPending}
+                        >
+                          {updateObraMutation.isPending ? "Atualizando..." : "Confirmar e Atualizar Obra"}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </CardContent>
+              </Card>
+            </div>
           )}
         </div>
 

@@ -177,6 +177,23 @@ export const insertNewObra = async (obraData: Omit<Obra, 'id' | 'created_at' | '
   return data as Obra;
 };
 
+export const updateObraDetails = async (obraId: string, details: { titulo: string; descricao: string; }) => {
+  const { data, error } = await supabase
+    .from('obras')
+    .update({
+      titulo: details.titulo,
+      descricao: details.descricao,
+    })
+    .eq('id', obraId)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Erro ao atualizar a obra: ${error.message}`);
+  }
+  return data;
+};
+
 export const fetchGalleryImagesByObraId = async (obraId: string): Promise<Img[]> => {
   const { data, error } = await supabase
     .from("imgs")
