@@ -128,6 +128,7 @@ serve(async (req) => {
     }
 
     const analysisResult = await n8nResponse.json();
+    console.log(`[${functionName}] Resposta bruta do n8n:`, JSON.stringify(analysisResult, null, 2));
     
     let rawData;
     if (Array.isArray(analysisResult) && analysisResult.length > 0) {
@@ -157,8 +158,13 @@ serve(async (req) => {
     }
 
     if (!insertPayload.suggested_title && !insertPayload.description && !insertPayload.style_classification && !insertPayload.constructive_feedback) {
-      console.error(`[${functionName}] ❌ Nenhum campo foi extraído da resposta.`);
-      throw new Error("Não foi possível extrair os dados da análise. Verifique o formato da resposta do webhook.");
+      console.error(`[${functionName}] ❌ Nenhum campo foi extraído da resposta. Chaves recebidas:`, Object.keys(resultData));
+      const errorMessage = resultData.error || resultData.message;
+      if (typeof errorMessage === 'string') {
+        throw new Error(`Erro retornado pelo serviço de análise: "${errorMessage}"`);
+      } else {
+        throw new Error("Não foi possível extrair os dados da análise. Verifique o formato da resposta do webhook e os logs da função.");
+      }
     }
 
     const { data: savedAnalysis, error: insertError } = await supabaseAdmin
