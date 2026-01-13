@@ -743,3 +743,17 @@ export const deleteUserApiKey = async () => {
   if (data.error) throw new Error(data.error);
   return data;
 };
+
+export const getUserApiKeyStatus = async (): Promise<{ isSet: boolean }> => {
+  const { data, error } = await supabase
+    .from("user_api_keys")
+    .select("api_key")
+    .single();
+
+  if (error && error.code !== 'PGRST116') { // Ignore "no rows found"
+    console.error("Error checking API key status:", error);
+    return { isSet: false };
+  }
+
+  return { isSet: !!data?.api_key };
+};
