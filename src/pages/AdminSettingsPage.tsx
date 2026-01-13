@@ -10,10 +10,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { showSuccess, showError } from "@/utils/toast";
-import { Save, Info } from "lucide-react";
+import { Save, Info, BrainCircuit } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 
 const settingsSchema = z.object({
   n8n_webhook_url: z.string().url("Por favor, insira uma URL válida.").or(z.literal("")),
+  gemini_tutor_prompt: z.string().min(10, "O prompt do sistema parece muito curto."),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -21,15 +23,20 @@ type SettingsFormValues = z.infer<typeof settingsSchema>;
 const AdminSettingsPage: React.FC = () => {
   const queryClient = useQueryClient();
 
-  const { data: webhookUrl, isLoading } = useQuery({
-    queryKey: ["settings", "n8n_webhook_url"],
-    queryFn: () => getSetting("n8n_webhook_url"),
+  const { data: settings, isLoading } = useQuery({
+    queryKey: ["allAdminSettings"],
+    queryFn: async () => {
+      const n8nUrl = await getSetting("n8n_webhook_url");
+      const tutorPrompt = await getSetting("gemini_tutor_prompt");
+      return { n8n_webhook_url: n8nUrl, gemini_tutor_prompt: tutorPrompt };
+    },
   });
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
     values: {
-      n8n_webhook_url: webhookUrl || "",
+      n8n_webhook_url: settings?.n8n_webhook_url || "",
+      gemini_tutor_prompt: settings?.gemini_tutor_prompt || "",
     },
     resetOptions: {
       keepDirtyValues: true,
@@ -37,9 +44,12 @@ const AdminSettingsPage: React.FC = () => {
   });
 
   const mutation = useMutation({
-    mutationFn: (values: SettingsFormValues) => setSetting("n8n_webhook_url", values.n8n_webhook_url),
+    mutationFn: async (values: SettingsFormValues) => {
+      await setSetting("n8n_webhook_url", values.n8n_webhook_url);
+      await setSetting("gemini_tutor_prompt", values.gemini_tutor_prompt);
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["settings", "n8n_webhook_url"] });
+      queryClient.invalidateQueries({ queryKey: ["allAdminSettings"] });
       showSuccess("Configurações salvas com sucesso!");
     },
     onError: (error) => {
@@ -64,16 +74,16 @@ const AdminSettingsPage: React.FC = () => {
     <div className="max-w-3xl mx-auto space-y-8">
       <h1 className="text-3xl font-bold">Configurações de Administrador</h1>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Integração com n8n</CardTitle>
-          <CardDescription>
-            Configure a URL do webhook para o Analisador de Obras com IA.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Integração com n8n</CardTitle>
+              <CardDescription>
+                Configure a URL do webhook para o Analisador de Obras com IA.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
               <FormField
                 control={form.control}
                 name="n8n_webhook_url"
@@ -90,14 +100,49 @@ const AdminSettingsPage: React.FC = () => {
                   </FormItem>
                 )}
               />
-              <Button type="submit" disabled={mutation.isPending}>
-                <Save className="mr-2 h-4 w-4" />
-                {mutation.isPending ? "Salvando..." : "Salvar Configurações"}
-              </Button>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BrainCircuit className="h-6 w-6 text-purple-600" />
+                Tutor de Arte (Gemini)
+              </CardTitle>
+              <CardDescription>
+                Defina a personalidade e as instruções do seu assistente de IA.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FormField
+                control={form.control}
+                name="gemini_tutor_prompt"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Prompt do Sistema</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Ex: Você é um professor de arte amigável e experiente. Seu nome é 'Maestro'..."
+                        className="min-h-[200px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Esta é a instrução principal que guiará todas as respostas do Gemini no chat do tutor de arte.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          <Button type="submit" disabled={mutation.isPending}>
+            <Save className="mr-2 h-4 w-4" />
+            {mutation.isPending ? "Salvando..." : "Salvar Todas as Configurações"}
+          </Button>
+        </form>
+      </Form>
 
       <Card className="bg-blue-50 border-blue-200">
         <CardHeader className="flex flex-row items-center gap-3">
