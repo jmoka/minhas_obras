@@ -5,7 +5,7 @@ import ObraCard from "@/components/ObraCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Palette, Search, X as XIcon, Shield } from "lucide-react";
+import { User, Palette, Search, X as XIcon, Shield, Heart } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -52,6 +52,12 @@ const PublicGallery: React.FC = () => {
         <p className="mt-4 text-lg text-stone-600 max-w-2xl mx-auto">
           Navegue por uma coleção diversificada de obras e descubra o talento de nossos artistas.
         </p>
+        <Link to="/donate">
+          <Button className="mt-6 bg-gradient-to-r from-pink-500 to-orange-500 text-white shadow-lg hover:shadow-xl transition-shadow">
+            <Heart className="mr-2 h-4 w-4" />
+            Apoie a Plataforma
+          </Button>
+        </Link>
       </div>
 
       {/* Artists Section */}

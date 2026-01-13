@@ -25,6 +25,7 @@ import ArtworkAnalyzerPage from "./pages/ArtworkAnalyzerPage";
 import AdminSettingsPage from "./pages/AdminSettingsPage";
 import ApiSettingsPage from "./pages/ApiSettingsPage";
 import ArtTutorPage from "./pages/ArtTutorPage";
+import DonationPage from "./pages/DonationPage";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +44,7 @@ const App = () => (
               <Route path="/welcome" element={<WelcomePage />} />
               <Route path="/obras/:id" element={<ObraDetail />} />
               <Route path="/artist/:userId" element={<ArtistPublicPage />} />
+              <Route path="/donate" element={<DonationPage />} />
               
               {/* Rotas protegidas - requerem usuário desbloqueado */}
               <Route path="/my-gallery" element={

@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { showSuccess, showError } from "@/utils/toast";
-import { Save, BrainCircuit, MessageCircle } from "lucide-react";
+import { Save, BrainCircuit, MessageCircle, Key } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 
 const settingsSchema = z.object({
@@ -19,6 +19,7 @@ const settingsSchema = z.object({
   admin_whatsapp: z.string().refine(val => /^\+\d{10,15}$/.test(val) || val === '', {
     message: "Formato inválido. Use o formato internacional, ex: +5511999999999"
   }),
+  pix_key: z.string().optional(),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -32,10 +33,12 @@ const AdminSettingsPage: React.FC = () => {
       const tutorPrompt = await getSetting("gemini_tutor_prompt");
       const modelName = await getSetting("gemini_model_name");
       const adminWhatsApp = await getSetting("admin_whatsapp");
+      const pixKey = await getSetting("pix_key");
       return { 
         gemini_tutor_prompt: tutorPrompt,
         gemini_model_name: modelName,
         admin_whatsapp: adminWhatsApp,
+        pix_key: pixKey,
       };
     },
   });
@@ -46,6 +49,7 @@ const AdminSettingsPage: React.FC = () => {
       gemini_tutor_prompt: "",
       gemini_model_name: "gemini-pro",
       admin_whatsapp: "",
+      pix_key: "",
     },
   });
 
@@ -55,6 +59,7 @@ const AdminSettingsPage: React.FC = () => {
         gemini_tutor_prompt: settings.gemini_tutor_prompt || "",
         gemini_model_name: settings.gemini_model_name || "gemini-pro",
         admin_whatsapp: settings.admin_whatsapp || "",
+        pix_key: settings.pix_key || "",
       });
     }
   }, [settings, form]);
@@ -64,6 +69,7 @@ const AdminSettingsPage: React.FC = () => {
       await setSetting("gemini_tutor_prompt", values.gemini_tutor_prompt);
       await setSetting("gemini_model_name", values.gemini_model_name);
       await setSetting("admin_whatsapp", values.admin_whatsapp);
+      await setSetting("pix_key", values.pix_key || "");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["allAdminSettings"] });
@@ -96,11 +102,41 @@ const AdminSettingsPage: React.FC = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
+                <Key className="h-6 w-6 text-blue-600" />
+                Configurações de Pagamento
+              </CardTitle>
+              <CardDescription>
+                Chave PIX para receber doações para a plataforma.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FormField
+                control={form.control}
+                name="pix_key"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Chave PIX</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Sua chave PIX (CPF, CNPJ, email, etc.)" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Esta chave será exibida na página de doação.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
                 <MessageCircle className="h-6 w-6 text-green-600" />
                 Contato do Administrador
               </CardTitle>
               <CardDescription>
-                Número de WhatsApp para solicitações de desbloqueio de novos usuários.
+                Número de WhatsApp para solicitações de desbloqueio e envio de comprovantes de doação.
               </CardDescription>
             </CardHeader>
             <CardContent>
