@@ -51,7 +51,7 @@ serve(async (req) => {
 
     const apiKey = apiKeyData.api_key;
     const systemPrompt = promptData.value;
-    const modelName = modelData?.value || "gemini-pro-vision"; // Usa o modelo configurado ou um fallback
+    const modelName = modelData?.value || "gemini-1.5-flash"; // Usa o modelo configurado ou um fallback
 
     // 4. Buscar histórico da conversa, se houver
     let currentSessionId = sessionId;

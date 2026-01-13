@@ -60,7 +60,7 @@ serve(async (req) => {
 
     const { data: modelData } = await supabaseAdmin
       .from('settings').select('value').eq('key', 'gemini_model_name').single();
-    const modelName = modelData?.value || "gemini-pro-vision";
+    const modelName = modelData?.value || "gemini-1.5-flash";
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: modelName });

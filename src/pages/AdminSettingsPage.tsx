@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -40,15 +40,22 @@ const AdminSettingsPage: React.FC = () => {
 
   const form = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
-    values: {
-      n8n_webhook_url: settings?.n8n_webhook_url || "",
-      gemini_tutor_prompt: settings?.gemini_tutor_prompt || "",
-      gemini_model_name: settings?.gemini_model_name || "gemini-pro-vision",
-    },
-    resetOptions: {
-      keepDirtyValues: true,
+    defaultValues: {
+      n8n_webhook_url: "",
+      gemini_tutor_prompt: "",
+      gemini_model_name: "gemini-1.5-flash",
     },
   });
+
+  useEffect(() => {
+    if (settings) {
+      form.reset({
+        n8n_webhook_url: settings.n8n_webhook_url || "",
+        gemini_tutor_prompt: settings.gemini_tutor_prompt || "",
+        gemini_model_name: settings.gemini_model_name || "gemini-1.5-flash",
+      });
+    }
+  }, [settings, form]);
 
   const mutation = useMutation({
     mutationFn: async (values: SettingsFormValues) => {
@@ -129,10 +136,10 @@ const AdminSettingsPage: React.FC = () => {
                   <FormItem>
                     <FormLabel>Nome do Modelo Gemini</FormLabel>
                     <FormControl>
-                      <Input placeholder="ex: gemini-pro-vision" {...field} />
+                      <Input placeholder="ex: gemini-1.5-flash" {...field} />
                     </FormControl>
                     <FormDescription>
-                      Modelos recomendados: <code>gemini-pro-vision</code> (para chat e análise de imagem) ou <code>gemini-1.0-pro</code>.
+                      Modelos recomendados: <code>gemini-1.5-flash</code>, <code>gemini-pro-vision</code> ou <code>gemini-1.0-pro</code>.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
