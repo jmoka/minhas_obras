@@ -715,15 +715,31 @@ export const saveUserApiKey = async (apiKey: string) => {
   return data;
 };
 
-export const getUserApiKeyStatus = async (): Promise<{ isSet: boolean }> => {
+export const getUserApiKey = async (): Promise<{ apiKey: string | null }> => {
   const { data, error } = await supabase
     .from("user_api_keys")
-    .select("id", { count: "exact", head: true });
+    .select("api_key")
+    .single();
 
-  if (error) {
-    console.error("Error checking API key status:", error);
-    return { isSet: false };
+  if (error && error.code !== 'PGRST116') { // Ignore "no rows found" error
+    console.error("Error fetching API key:", error);
+    throw new Error("Não foi possível buscar a chave de API.");
   }
 
-  return { isSet: (data?.length || 0) > 0 };
+  return { apiKey: data?.api_key || null };
+};
+
+export const deleteUserApiKey = async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error("Usuário não autenticado.");
+
+  const { data, error } = await supabase.functions.invoke("delete-user-api-key", {
+    headers: {
+      'Authorization': `Bearer ${session.access_token}`,
+    },
+  });
+
+  if (error) throw error;
+  if (data.error) throw new Error(data.error);
+  return data;
 };
