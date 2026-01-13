@@ -43,7 +43,7 @@ const AdminSettingsPage: React.FC = () => {
     defaultValues: {
       n8n_webhook_url: "",
       gemini_tutor_prompt: "",
-      gemini_model_name: "gemini-1.5-flash",
+      gemini_model_name: "gemini-pro",
     },
   });
 
@@ -52,7 +52,7 @@ const AdminSettingsPage: React.FC = () => {
       form.reset({
         n8n_webhook_url: settings.n8n_webhook_url || "",
         gemini_tutor_prompt: settings.gemini_tutor_prompt || "",
-        gemini_model_name: settings.gemini_model_name || "gemini-1.5-flash",
+        gemini_model_name: settings.gemini_model_name || "gemini-pro",
       });
     }
   }, [settings, form]);
@@ -136,10 +136,10 @@ const AdminSettingsPage: React.FC = () => {
                   <FormItem>
                     <FormLabel>Nome do Modelo Gemini</FormLabel>
                     <FormControl>
-                      <Input placeholder="ex: gemini-1.5-flash" {...field} />
+                      <Input placeholder="ex: gemini-pro" {...field} />
                     </FormControl>
                     <FormDescription>
-                      Modelos recomendados: <code>gemini-1.5-flash</code>, <code>gemini-pro-vision</code> ou <code>gemini-1.0-pro</code>.
+                      Modelos recomendados: <code>gemini-pro</code>, <code>gemini-1.5-flash</code> (se disponível), ou <code>gemini-pro-vision</code> para análise de imagem.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
