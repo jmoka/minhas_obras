@@ -13,7 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Lightbulb, Sparkles, History, Trash2, Image as ImageIcon, CheckCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Lightbulb, Sparkles, History, Trash2, Image as ImageIcon, Download, Copy } from "lucide-react";
 import { showSuccess, showError } from "@/utils/toast";
 import { cn } from "@/lib/utils";
 
@@ -136,6 +137,32 @@ const ImageIdeaGeneratorPage: React.FC = () => {
     generateMutation.mutate(values);
   };
 
+  const handleDownload = async () => {
+    if (!activeIdea?.imagem_url) return;
+    try {
+      const response = await fetch(activeIdea.imagem_url);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${activeIdea.titulo.replace(/\s+/g, '_') || 'arte-gerada'}.jpg`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      showSuccess("Download iniciado!");
+    } catch (error) {
+      showError("Não foi possível baixar a imagem.");
+      console.error(error);
+    }
+  };
+
+  const handleCopyPrompt = () => {
+    if (!activeIdea?.prompt_final) return;
+    navigator.clipboard.writeText(activeIdea.prompt_final);
+    showSuccess("Prompt copiado para a área de transferência!");
+  };
+
   return (
     <div className="max-w-7xl mx-auto space-y-8">
       <div className="text-center">
@@ -219,7 +246,46 @@ const ImageIdeaGeneratorPage: React.FC = () => {
                   <p className="mt-2 text-muted-foreground">Gerando sua obra de arte...</p>
                 </div>
               ) : activeIdea?.imagem_url ? (
-                <img src={activeIdea.imagem_url} alt={activeIdea.titulo} className="w-full rounded-lg" />
+                <div className="space-y-4">
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <img 
+                        src={activeIdea.imagem_url} 
+                        alt={activeIdea.titulo} 
+                        className="w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity" 
+                      />
+                    </DialogTrigger>
+                    <DialogContent className="max-w-4xl p-2">
+                      <img src={activeIdea.imagem_url} alt={activeIdea.titulo} className="w-full h-auto rounded-lg" />
+                    </DialogContent>
+                  </Dialog>
+
+                  <div className="flex gap-2">
+                    <Button onClick={handleDownload} className="w-full">
+                      <Download className="mr-2 h-4 w-4" />
+                      Baixar Imagem
+                    </Button>
+                  </div>
+
+                  <div>
+                    <FormLabel>Prompt Final Gerado</FormLabel>
+                    <div className="relative mt-1">
+                      <Textarea 
+                        readOnly 
+                        value={activeIdea.prompt_final} 
+                        className="pr-10 h-32 bg-gray-50" 
+                      />
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="absolute top-2 right-2 h-7 w-7"
+                        onClick={handleCopyPrompt}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-64 bg-muted rounded-lg">
                   <p className="text-muted-foreground">A imagem gerada aparecerá aqui.</p>
