@@ -795,12 +795,12 @@ export const fetchChatMessages = async (sessionId: string) => {
   return data;
 };
 
-export const sendChatMessageToTutor = async (sessionId: string | null, message: string) => {
+export const sendChatMessageToTutor = async (sessionId: string | null, message: string, modelName: string) => {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error("Usuário não autenticado.");
 
   const { data, error } = await supabase.functions.invoke("gemini-chat", {
-    body: { sessionId, message },
+    body: { sessionId, message, modelName },
     headers: {
       'Authorization': `Bearer ${session.access_token}`,
     },

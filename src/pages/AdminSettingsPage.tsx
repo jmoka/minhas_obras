@@ -21,6 +21,7 @@ const settingsSchema = z.object({
   }),
   pix_key: z.string().optional(),
   gemini_idea_prompt: z.string().optional(),
+  available_gemini_models: z.string().optional(),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -36,12 +37,14 @@ const AdminSettingsPage: React.FC = () => {
       const adminWhatsApp = await getSetting("admin_whatsapp");
       const pixKey = await getSetting("pix_key");
       const ideaPrompt = await getSetting("gemini_idea_prompt");
+      const availableModels = await getSetting("available_gemini_models");
       return { 
         gemini_tutor_prompt: tutorPrompt,
         gemini_model_name: modelName,
         admin_whatsapp: adminWhatsApp,
         pix_key: pixKey,
         gemini_idea_prompt: ideaPrompt,
+        available_gemini_models: availableModels,
       };
     },
   });
@@ -54,6 +57,7 @@ const AdminSettingsPage: React.FC = () => {
       admin_whatsapp: "",
       pix_key: "",
       gemini_idea_prompt: "",
+      available_gemini_models: "gemini-1.5-flash,gemini-pro,gemini-pro-vision",
     },
   });
 
@@ -65,6 +69,7 @@ const AdminSettingsPage: React.FC = () => {
         admin_whatsapp: settings.admin_whatsapp || "",
         pix_key: settings.pix_key || "",
         gemini_idea_prompt: settings.gemini_idea_prompt || "",
+        available_gemini_models: settings.available_gemini_models || "gemini-1.5-flash,gemini-pro,gemini-pro-vision",
       });
     }
   }, [settings, form]);
@@ -76,6 +81,7 @@ const AdminSettingsPage: React.FC = () => {
       await setSetting("admin_whatsapp", values.admin_whatsapp);
       await setSetting("pix_key", values.pix_key || "");
       await setSetting("gemini_idea_prompt", values.gemini_idea_prompt || "");
+      await setSetting("available_gemini_models", values.available_gemini_models || "");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["allAdminSettings"] });
@@ -178,15 +184,34 @@ const AdminSettingsPage: React.FC = () => {
             <CardContent className="space-y-6">
               <FormField
                 control={form.control}
+                name="available_gemini_models"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Modelos Gemini Disponíveis</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="gemini-1.5-flash,gemini-pro,gemini-pro-vision"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Liste os modelos que os usuários podem escolher, separados por vírgula.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
                 name="gemini_model_name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nome do Modelo Gemini</FormLabel>
+                    <FormLabel>Nome do Modelo Gemini (Padrão)</FormLabel>
                     <FormControl>
                       <Input placeholder="ex: gemini-pro" {...field} />
                     </FormControl>
                     <FormDescription>
-                      Modelos recomendados: <code>gemini-pro</code>, <code>gemini-1.5-flash</code>, ou <code>gemini-pro-vision</code>.
+                      Este será o modelo padrão se nenhum for selecionado.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

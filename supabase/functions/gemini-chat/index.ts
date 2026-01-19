@@ -15,7 +15,7 @@ serve(async (req) => {
   }
 
   try {
-    const { sessionId, message } = await req.json();
+    const { sessionId, message, modelName: requestedModel } = await req.json();
     if (!message) throw new Error("A mensagem é obrigatória.");
 
     // 1. Autenticar usuário
@@ -51,7 +51,7 @@ serve(async (req) => {
 
     const apiKey = apiKeyData.api_key;
     const systemPrompt = promptData.value;
-    const modelName = modelData?.value || "gemini-pro"; // Usa o modelo configurado ou um fallback
+    const modelToUse = requestedModel || modelData?.value || "gemini-pro";
 
     // 4. Buscar histórico da conversa, se houver
     let currentSessionId = sessionId;
@@ -72,7 +72,7 @@ serve(async (req) => {
     // 5. Interagir com a API do Gemini
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ 
-      model: modelName,
+      model: modelToUse,
       systemInstruction: systemPrompt,
     });
     const chat = model.startChat({ history });

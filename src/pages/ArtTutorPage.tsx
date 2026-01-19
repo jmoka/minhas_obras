@@ -1,15 +1,16 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { fetchChatSessions, fetchChatMessages, sendChatMessageToTutor, deleteChatSession } from "@/integrations/supabase/api";
+import { fetchChatSessions, fetchChatMessages, sendChatMessageToTutor, deleteChatSession, getSetting } from "@/integrations/supabase/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, MessageSquare, Trash2, Send, BrainCircuit, User, PanelLeft } from "lucide-react";
 import { showError, showSuccess } from "@/utils/toast";
 import { formatDistanceToNow } from "date-fns";
@@ -100,6 +101,7 @@ const SessionsList = ({
 const ArtTutorPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [selectedModel, setSelectedModel] = useState<string>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -115,8 +117,23 @@ const ArtTutorPage: React.FC = () => {
     enabled: !!activeSessionId,
   });
 
+  const { data: availableModelsData } = useQuery({
+    queryKey: ["availableModels"],
+    queryFn: () => getSetting("available_gemini_models"),
+  });
+
+  const availableModels = useMemo(() => {
+    return availableModelsData?.split(',').map(m => m.trim()).filter(Boolean) || [];
+  }, [availableModelsData]);
+
+  useEffect(() => {
+    if (availableModels.length > 0 && !selectedModel) {
+      setSelectedModel(availableModels[0]);
+    }
+  }, [availableModels, selectedModel]);
+
   const sendMessageMutation = useMutation({
-    mutationFn: (values: { message: string }) => sendChatMessageToTutor(activeSessionId, values.message),
+    mutationFn: (values: { message: string; modelName: string }) => sendChatMessageToTutor(activeSessionId, values.message, values.modelName),
     onMutate: async (newMessage) => {
       const queryKey = ["chatMessages", activeSessionId];
       await queryClient.cancelQueries({ queryKey });
@@ -167,7 +184,7 @@ const ArtTutorPage: React.FC = () => {
   });
 
   const onSubmit = (values: MessageFormValues) => {
-    sendMessageMutation.mutate({ message: values.content });
+    sendMessageMutation.mutate({ message: values.content, modelName: selectedModel });
     form.reset();
   };
 
@@ -196,6 +213,23 @@ const ArtTutorPage: React.FC = () => {
 
   const chatWindow = (
     <div className="flex flex-col h-full">
+      <div className="p-2 border-b flex items-center justify-between">
+        <h2 className="font-semibold truncate">
+          {activeSessionId ? sessions?.find(s => s.id === activeSessionId)?.title : "Tutor de Arte"}
+        </h2>
+        {availableModels.length > 0 && (
+          <Select value={selectedModel} onValueChange={setSelectedModel}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Selecionar modelo" />
+            </SelectTrigger>
+            <SelectContent>
+              {availableModels.map(model => (
+                <SelectItem key={model} value={model}>{model}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </div>
       <ScrollArea className="flex-grow p-4">
         {!activeSessionId ? (
           <div className="flex flex-col items-center justify-center h-full text-center">
