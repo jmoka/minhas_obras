@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
@@ -40,6 +40,7 @@ const ideaSchema = z.object({
   resolucao: z.string().optional(),
   finalidade: z.string().optional(),
   prompt_negativo: z.string().optional(),
+  modelo_gemini: z.string().optional(),
 });
 
 type IdeaFormValues = z.infer<typeof ideaSchema>;
@@ -78,6 +79,15 @@ const ImageIdeaGeneratorPage: React.FC = () => {
     queryFn: () => getSetting("gemini_idea_prompt"),
   });
 
+  const { data: availableModelsData } = useQuery({
+    queryKey: ["availableModels"],
+    queryFn: () => getSetting("available_gemini_models"),
+  });
+
+  const availableModels = useMemo(() => {
+    return availableModelsData?.split(',').map(m => m.trim()).filter(Boolean) || [];
+  }, [availableModelsData]);
+
   const generateMutation = useMutation({
     mutationFn: async (values: IdeaFormValues) => {
       const generatePrompt = (data: IdeaFormValues): string => {
@@ -103,8 +113,9 @@ const ImageIdeaGeneratorPage: React.FC = () => {
         ].filter(Boolean).join(', ');
 
         const negativePrompt = data.prompt_negativo ? ` --no ${data.prompt_negativo}` : '';
+        const modelParam = data.modelo_gemini ? ` --model ${data.modelo_gemini}` : '';
 
-        return `${systemPart}\n\n${details}${negativePrompt}`;
+        return `${systemPart}\n\n${details}${negativePrompt}${modelParam}`;
       };
 
       const prompt_final = generatePrompt(values);
@@ -230,6 +241,31 @@ const ImageIdeaGeneratorPage: React.FC = () => {
                       <FormField name="resolucao" control={form.control} render={({ field }) => (<FormItem><FormLabel>Resolução</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{resolucoes.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                       <FormField name="finalidade" control={form.control} render={({ field }) => (<FormItem><FormLabel>Finalidade</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{finalidades.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                     </div>
+                    
+                    <FormField
+                      name="modelo_gemini"
+                      control={form.control}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Modelo de IA (para o prompt)</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione um modelo (opcional)" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {availableModels.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                          <FormDescription>
+                            O modelo escolhido será adicionado ao prompt final (ex: --model gemini-pro-vision).
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
                     <FormField name="prompt_negativo" control={form.control} render={({ field }) => (<FormItem><FormLabel>Prompt Negativo</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
                   </div>
                 </ScrollArea>
