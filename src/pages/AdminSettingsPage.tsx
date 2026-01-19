@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getSetting, setSetting } from "@/integrations/supabase/api";
+import { getSetting, setSettings } from "@/integrations/supabase/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -84,13 +84,16 @@ const AdminSettingsPage: React.FC = () => {
 
   const mutation = useMutation({
     mutationFn: async (values: SettingsFormValues) => {
-      await setSetting("gemini_tutor_prompt", values.gemini_tutor_prompt);
-      await setSetting("gemini_model_name", values.gemini_model_name);
-      await setSetting("admin_whatsapp", values.admin_whatsapp);
-      await setSetting("pix_key", values.pix_key || "");
-      await setSetting("gemini_idea_prompt", values.gemini_idea_prompt || "");
-      await setSetting("available_gemini_models", values.available_gemini_models || "");
-      await setSetting("gemini_image_model_name", values.gemini_image_model_name || "");
+      const settingsToUpdate = [
+        { key: "gemini_tutor_prompt", value: values.gemini_tutor_prompt },
+        { key: "gemini_model_name", value: values.gemini_model_name },
+        { key: "admin_whatsapp", value: values.admin_whatsapp },
+        { key: "pix_key", value: values.pix_key || "" },
+        { key: "gemini_idea_prompt", value: values.gemini_idea_prompt || "" },
+        { key: "available_gemini_models", value: values.available_gemini_models || "" },
+        { key: "gemini_image_model_name", value: values.gemini_image_model_name || "" },
+      ];
+      await setSettings(settingsToUpdate);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["allAdminSettings"] });

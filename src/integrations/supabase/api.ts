@@ -715,6 +715,17 @@ export const setSetting = async (key: string, value: string): Promise<void> => {
   }
 };
 
+export const setSettings = async (settings: { key: string; value: string }[]): Promise<void> => {
+  const { error } = await supabase
+    .from("settings")
+    .upsert(settings, { onConflict: 'key' });
+
+  if (error) {
+    console.error(`Error setting multiple settings:`, error);
+    throw new Error(`Não foi possível salvar as configurações: ${error.message}`);
+  }
+};
+
 // User API Key Functions
 export const saveUserApiKey = async (apiKey: string) => {
   const { data: { session } } = await supabase.auth.getSession();
