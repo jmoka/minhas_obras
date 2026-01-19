@@ -58,17 +58,24 @@ serve(async (req) => {
     const result = await model.generateContent(prompt);
     const response = await result.response;
     
-    // A API de imagem retorna os dados da imagem em 'parts'
+    // 5. Verificar se a resposta contém uma imagem
     const imagePart = response.candidates?.[0]?.content?.parts?.[0];
     if (!imagePart || !('inlineData' in imagePart)) {
-      throw new Error("A resposta da IA não continha uma imagem. Verifique o modelo e o prompt.");
+      const textResponse = response.text();
+      console.error(`[${functionName}] A resposta da IA não continha uma imagem. Resposta recebida:`, textResponse);
+      return new Response(JSON.stringify({ 
+        error: `O modelo '${modelName}' não retornou uma imagem. Verifique se o modelo correto para geração de imagem está configurado pelo administrador.` 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400, // Bad Request, pois é um erro de configuração ou de prompt
+      });
     }
 
     const base64ImageData = imagePart.inlineData.data;
     const mimeType = imagePart.inlineData.mimeType;
     const fileExtension = mimeType.split('/')[1] || 'png';
 
-    // 5. Fazer upload da imagem para o Supabase Storage
+    // 6. Fazer upload da imagem para o Supabase Storage
     const imageBytes = decode(base64ImageData);
     const filePath = `generated_images/${user.id}/${crypto.randomUUID()}.${fileExtension}`;
 
@@ -80,7 +87,7 @@ serve(async (req) => {
       throw new Error(`Erro ao salvar imagem no armazenamento: ${uploadError.message}`);
     }
 
-    // 6. Retornar o caminho do arquivo salvo
+    // 7. Retornar o caminho do arquivo salvo
     return new Response(JSON.stringify({ filePath }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
