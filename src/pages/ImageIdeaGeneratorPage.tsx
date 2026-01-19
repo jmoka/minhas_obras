@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -268,7 +269,7 @@ const ImageIdeaGeneratorPage: React.FC = () => {
                   </div>
 
                   <div>
-                    <FormLabel>Prompt Final Gerado</FormLabel>
+                    <Label>Prompt Final Gerado</Label>
                     <div className="relative mt-1">
                       <Textarea 
                         readOnly 
