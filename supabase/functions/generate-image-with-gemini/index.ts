@@ -49,7 +49,12 @@ serve(async (req) => {
       .from('settings').select('value').eq('key', 'gemini_image_model_name').single();
     
     const apiKey = apiKeyData.api_key;
-    const modelName = modelData?.value || "gemini-1.5-flash"; // Fallback
+    const modelName = modelData?.value;
+
+    if (!modelName) {
+      console.error(`[${functionName}] O modelo de imagem não está configurado nas Configurações de Administrador.`);
+      throw new Error("O modelo de IA para geração de imagem não foi configurado pelo administrador.");
+    }
 
     // 4. Interagir com a API do Gemini para gerar a imagem
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -62,12 +67,12 @@ serve(async (req) => {
     const imagePart = response.candidates?.[0]?.content?.parts?.[0];
     if (!imagePart || !('inlineData' in imagePart)) {
       const textResponse = response.text();
-      console.error(`[${functionName}] A resposta da IA não continha uma imagem. Resposta recebida:`, textResponse);
+      console.error(`[${functionName}] A resposta da IA não continha uma imagem. Modelo usado: '${modelName}'. Resposta recebida:`, textResponse);
       return new Response(JSON.stringify({ 
         error: `O modelo '${modelName}' não retornou uma imagem. Verifique se o modelo correto para geração de imagem está configurado pelo administrador.` 
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400, // Bad Request, pois é um erro de configuração ou de prompt
+        status: 400,
       });
     }
 
