@@ -250,7 +250,7 @@ const AdminSettingsPage: React.FC = () => {
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      Este modelo será usado para gerar os prompts de imagem.
+                      Este modelo será usado para gerar as imagens. Recomenda-se 'gemini-1.5-flash'.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
