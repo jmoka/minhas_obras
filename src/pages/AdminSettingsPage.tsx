@@ -16,7 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const settingsSchema = z.object({
   gemini_tutor_prompt: z.string().min(10, "O prompt do sistema parece muito curto."),
-  gemini_model_name: z.string().min(3, "O nome do modelo parece muito curto."),
+  gemini_model_name: z.string().min(1, "É necessário selecionar um modelo padrão."),
   admin_whatsapp: z.string().refine(val => /^\+\d{10,15}$/.test(val) || val === '', {
     message: "Formato inválido. Use o formato internacional, ex: +5511999999999"
   }),
@@ -57,12 +57,12 @@ const AdminSettingsPage: React.FC = () => {
     resolver: zodResolver(settingsSchema),
     defaultValues: {
       gemini_tutor_prompt: "",
-      gemini_model_name: "gemini-pro",
+      gemini_model_name: "",
       admin_whatsapp: "",
       pix_key: "",
       gemini_idea_prompt: "",
       available_gemini_models: "gemini-1.5-flash,gemini-pro,gemini-pro-vision",
-      gemini_image_model_name: "gemini-pro-vision",
+      gemini_image_model_name: "",
     },
   });
 
@@ -72,12 +72,12 @@ const AdminSettingsPage: React.FC = () => {
     if (settings) {
       form.reset({
         gemini_tutor_prompt: settings.gemini_tutor_prompt || "",
-        gemini_model_name: settings.gemini_model_name || "gemini-pro",
+        gemini_model_name: settings.gemini_model_name || "",
         admin_whatsapp: settings.admin_whatsapp || "",
         pix_key: settings.pix_key || "",
         gemini_idea_prompt: settings.gemini_idea_prompt || "",
         available_gemini_models: settings.available_gemini_models || "gemini-1.5-flash,gemini-pro,gemini-pro-vision",
-        gemini_image_model_name: settings.gemini_image_model_name || "gemini-pro-vision",
+        gemini_image_model_name: settings.gemini_image_model_name || "",
       });
     }
   }, [settings, form]);
@@ -216,7 +216,7 @@ const AdminSettingsPage: React.FC = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Modelo Padrão (Tutor de Arte)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value || ''}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione um modelo" />
@@ -239,7 +239,7 @@ const AdminSettingsPage: React.FC = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Modelo de Imagem (Gerador de Ideias)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value || ''}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione um modelo" />
