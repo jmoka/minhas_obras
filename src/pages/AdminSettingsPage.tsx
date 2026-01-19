@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { showSuccess, showError } from "@/utils/toast";
-import { Save, BrainCircuit, MessageCircle, Key } from "lucide-react";
+import { Save, BrainCircuit, MessageCircle, Key, Lightbulb } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 
 const settingsSchema = z.object({
@@ -20,6 +20,7 @@ const settingsSchema = z.object({
     message: "Formato inválido. Use o formato internacional, ex: +5511999999999"
   }),
   pix_key: z.string().optional(),
+  gemini_idea_prompt: z.string().optional(),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -34,11 +35,13 @@ const AdminSettingsPage: React.FC = () => {
       const modelName = await getSetting("gemini_model_name");
       const adminWhatsApp = await getSetting("admin_whatsapp");
       const pixKey = await getSetting("pix_key");
+      const ideaPrompt = await getSetting("gemini_idea_prompt");
       return { 
         gemini_tutor_prompt: tutorPrompt,
         gemini_model_name: modelName,
         admin_whatsapp: adminWhatsApp,
         pix_key: pixKey,
+        gemini_idea_prompt: ideaPrompt,
       };
     },
   });
@@ -50,6 +53,7 @@ const AdminSettingsPage: React.FC = () => {
       gemini_model_name: "gemini-pro",
       admin_whatsapp: "",
       pix_key: "",
+      gemini_idea_prompt: "",
     },
   });
 
@@ -60,6 +64,7 @@ const AdminSettingsPage: React.FC = () => {
         gemini_model_name: settings.gemini_model_name || "gemini-pro",
         admin_whatsapp: settings.admin_whatsapp || "",
         pix_key: settings.pix_key || "",
+        gemini_idea_prompt: settings.gemini_idea_prompt || "",
       });
     }
   }, [settings, form]);
@@ -70,6 +75,7 @@ const AdminSettingsPage: React.FC = () => {
       await setSetting("gemini_model_name", values.gemini_model_name);
       await setSetting("admin_whatsapp", values.admin_whatsapp);
       await setSetting("pix_key", values.pix_key || "");
+      await setSetting("gemini_idea_prompt", values.gemini_idea_prompt || "");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["allAdminSettings"] });
@@ -163,10 +169,10 @@ const AdminSettingsPage: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BrainCircuit className="h-6 w-6 text-purple-600" />
-                Configurações do Gemini
+                Configurações do Gemini (Tutor de Arte)
               </CardTitle>
               <CardDescription>
-                Defina o modelo e a personalidade do seu assistente de IA.
+                Defina o modelo e a personalidade do seu assistente de IA para o chat.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -180,7 +186,7 @@ const AdminSettingsPage: React.FC = () => {
                       <Input placeholder="ex: gemini-pro" {...field} />
                     </FormControl>
                     <FormDescription>
-                      Modelos recomendados: <code>gemini-pro</code>, <code>gemini-1.5-flash</code> (se disponível), ou <code>gemini-pro-vision</code> para análise de imagem.
+                      Modelos recomendados: <code>gemini-pro</code>, <code>gemini-1.5-flash</code>, ou <code>gemini-pro-vision</code>.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -200,7 +206,41 @@ const AdminSettingsPage: React.FC = () => {
                       />
                     </FormControl>
                     <FormDescription>
-                      Esta é a instrução principal que guiará todas as respostas do Gemini no chat do tutor de arte.
+                      Esta instrução guiará todas as respostas do Gemini no chat do tutor de arte.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Lightbulb className="h-6 w-6 text-yellow-500" />
+                Configurações do Gerador de Ideias
+              </CardTitle>
+              <CardDescription>
+                Defina uma instrução base para a criação de prompts de imagem.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FormField
+                control={form.control}
+                name="gemini_idea_prompt"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Prompt do Sistema (para geração de ideias)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Ex: Crie um prompt detalhado para um gerador de imagens de IA como Midjourney ou DALL-E, em inglês para melhor compatibilidade, com base nas seguintes características..."
+                        className="min-h-[150px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Esta instrução será o início de todos os prompts gerados na página "Gerador de Ideias".
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

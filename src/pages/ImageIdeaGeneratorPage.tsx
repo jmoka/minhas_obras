@@ -3,7 +3,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createImageIdea, updateImageIdea, fetchImageIdeas, deleteImageIdea } from "@/integrations/supabase/api";
+import { createImageIdea, updateImageIdea, fetchImageIdeas, deleteImageIdea, getSetting } from "@/integrations/supabase/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -73,28 +73,38 @@ const ImageIdeaGeneratorPage: React.FC = () => {
     queryFn: fetchImageIdeas,
   });
 
+  const { data: ideaSystemPrompt } = useQuery({
+    queryKey: ["geminiIdeaPrompt"],
+    queryFn: () => getSetting("gemini_idea_prompt"),
+  });
+
   const generateMutation = useMutation({
     mutationFn: async (values: IdeaFormValues) => {
       const generatePrompt = (data: IdeaFormValues): string => {
-        return `
-          ${data.descricao_principal}.
-          Tema: ${data.tema || 'N/A'}.
-          Estilo artístico: ${data.estilo_artistico || 'N/A'}.
-          Referência artística: ${data.referencia_artistica || 'N/A'}.
-          Paleta de cores: ${data.paleta_cores || 'N/A'}.
-          Iluminação: ${data.iluminacao || 'N/A'}.
-          Atmosfera: ${data.atmosfera || 'N/A'}.
-          Ambiente: ${data.ambiente || 'N/A'}.
-          Personagens: ${data.possui_personagens ? data.descricao_personagens || 'Sim, sem descrição' : 'Não'}.
-          Enquadramento: ${data.enquadramento || 'N/A'}.
-          Nível de detalhe: ${data.nivel_detalhe || 'N/A'}.
-          Texturas e materiais: ${data.texturas_materiais || 'N/A'}.
-          Qualidade do render: ${data.qualidade_render || 'N/A'}.
-          Formato da imagem: ${data.formato_imagem || 'N/A'}.
-          Resolução: ${data.resolucao || 'N/A'}.
-          Finalidade: ${data.finalidade || 'N/A'}.
-          Restrições: ${data.prompt_negativo || 'Nenhuma'}.
-        `.replace(/\s+/g, ' ').trim();
+        const systemPart = ideaSystemPrompt || "Crie um prompt de imagem detalhado para um gerador de IA como Midjourney ou DALL-E, baseado nas seguintes especificações. O prompt deve ser em inglês para melhor compatibilidade, mas use as palavras-chave fornecidas.";
+
+        const details = [
+          data.descricao_principal,
+          data.tema && `tema: ${data.tema}`,
+          data.estilo_artistico && `estilo: ${data.estilo_artistico}`,
+          data.referencia_artistica && `inspirado por: ${data.referencia_artistica}`,
+          data.paleta_cores && `cores: ${data.paleta_cores}`,
+          data.iluminacao && `iluminação: ${data.iluminacao}`,
+          data.atmosfera && `atmosfera: ${data.atmosfera}`,
+          data.ambiente && `ambiente: ${data.ambiente}`,
+          data.possui_personagens && `personagens: ${data.descricao_personagens || 'presentes'}`,
+          data.enquadramento && `enquadramento: ${data.enquadramento}`,
+          data.nivel_detalhe && `detalhes: ${data.nivel_detalhe}`,
+          data.texturas_materiais && `texturas: ${data.texturas_materiais}`,
+          data.qualidade_render && `qualidade: ${data.qualidade_render}`,
+          data.formato_imagem && `--ar ${data.formato_imagem.replace(':', ' ')}`,
+          data.resolucao && `resolução: ${data.resolucao}`,
+          data.finalidade && `finalidade: ${data.finalidade}`,
+        ].filter(Boolean).join(', ');
+
+        const negativePrompt = data.prompt_negativo ? ` --no ${data.prompt_negativo}` : '';
+
+        return `${systemPart}\n\n${details}${negativePrompt}`;
       };
 
       const prompt_final = generatePrompt(values);
