@@ -3,7 +3,8 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createImageIdea, updateImageIdea, fetchImageIdeas, deleteImageIdea, getSetting } from "@/integrations/supabase/api";
+import { createImageIdea, updateImageIdea, fetchImageIdeas, deleteImageIdea, getSetting, getPublicUrl } from "@/integrations/supabase/api";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -78,50 +79,50 @@ const ImageIdeaGeneratorPage: React.FC = () => {
     queryFn: () => getSetting("gemini_idea_prompt"),
   });
 
-  const { data: imageModelName } = useQuery({
-    queryKey: ["geminiImageModelName"],
-    queryFn: () => getSetting("gemini_image_model_name"),
-  });
-
   const generateMutation = useMutation({
     mutationFn: async (values: IdeaFormValues) => {
       const generatePrompt = (data: IdeaFormValues): string => {
-        const systemPart = ideaSystemPrompt || "Crie um prompt de imagem detalhado para um gerador de IA como Midjourney ou DALL-E, baseado nas seguintes especificações. O prompt deve ser em inglês para melhor compatibilidade, mas use as palavras-chave fornecidas.";
+        const systemPart = ideaSystemPrompt || "Crie uma descrição visual criativa para uma pintura em tela, baseada nas seguintes especificações. A descrição deve ser rica e sensorial, pensada como inspiração para um artista pintor.";
 
         const details = [
-          data.descricao_principal,
-          data.tema && `tema: ${data.tema}`,
-          data.estilo_artistico && `estilo: ${data.estilo_artistico}`,
-          data.referencia_artistica && `inspirado por: ${data.referencia_artistica}`,
-          data.paleta_cores && `cores: ${data.paleta_cores}`,
-          data.iluminacao && `iluminação: ${data.iluminacao}`,
-          data.atmosfera && `atmosfera: ${data.atmosfera}`,
-          data.ambiente && `ambiente: ${data.ambiente}`,
-          data.possui_personagens && `personagens: ${data.descricao_personagens || 'presentes'}`,
-          data.enquadramento && `enquadramento: ${data.enquadramento}`,
-          data.nivel_detalhe && `detalhes: ${data.nivel_detalhe}`,
-          data.texturas_materiais && `texturas: ${data.texturas_materiais}`,
-          data.qualidade_render && `qualidade: ${data.qualidade_render}`,
-          data.formato_imagem && `--ar ${data.formato_imagem.replace(':', ' ')}`,
-          data.resolucao && `resolução: ${data.resolucao}`,
-          data.finalidade && `finalidade: ${data.finalidade}`,
-        ].filter(Boolean).join(', ');
+          `**Tema Principal:** ${data.descricao_principal}`,
+          data.tema && `**Categoria:** ${data.tema}`,
+          data.estilo_artistico && `**Estilo:** ${data.estilo_artistico}`,
+          data.referencia_artistica && `**Inspirado por:** ${data.referencia_artistica}`,
+          data.paleta_cores && `**Paleta de Cores:** ${data.paleta_cores}`,
+          data.iluminacao && `**Iluminação:** ${data.iluminacao}`,
+          data.atmosfera && `**Atmosfera:** ${data.atmosfera}`,
+          data.ambiente && `**Ambiente:** ${data.ambiente}`,
+          data.possui_personagens && `**Personagens:** ${data.descricao_personagens || 'Presentes, conforme a imaginação do artista'}`,
+          data.enquadramento && `**Enquadramento:** ${data.enquadramento}`,
+          data.nivel_detalhe && `**Nível de Detalhe:** ${data.nivel_detalhe}`,
+          data.texturas_materiais && `**Texturas e Materiais:** ${data.texturas_materiais}`,
+          data.qualidade_render && `**Qualidade Visual:** ${data.qualidade_render}`,
+          data.finalidade && `**Finalidade:** ${data.finalidade}`,
+        ].filter(Boolean).join('\n');
 
-        const negativePrompt = data.prompt_negativo ? ` --no ${data.prompt_negativo}` : '';
-        const modelParam = imageModelName ? ` --model ${imageModelName}` : '';
-
-        return `${systemPart}\n\n${details}${negativePrompt}${modelParam}`;
+        // O prompt final para a IA é a combinação da instrução de sistema com os detalhes
+        return `${systemPart}\n\n${details}`;
       };
 
       const prompt_final = generatePrompt(values);
-      const initialIdea = await createImageIdea({ ...values, prompt_final });
+      const initialIdea = await createImageIdea({ ...values, prompt_final, status: 'PROCESSANDO' });
 
-      // SIMULAÇÃO DA CHAMADA À IA
-      await new Promise(resolve => setTimeout(resolve, 3000)); 
-      const placeholderUrl = `https://picsum.photos/seed/${initialIdea.id}/1024`;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Usuário não autenticado.");
+
+      const { data: generationData, error: generationError } = await supabase.functions.invoke("generate-image-with-gemini", {
+        body: { prompt: prompt_final },
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (generationError) throw generationError;
+      if (generationData.error) throw new Error(generationData.error);
 
       const updatedIdea = await updateImageIdea(initialIdea.id, {
-        imagem_url: placeholderUrl,
+        imagem_url: generationData.filePath,
         status: 'GERADO',
       });
 
@@ -157,12 +158,13 @@ const ImageIdeaGeneratorPage: React.FC = () => {
   const handleDownload = async () => {
     if (!activeIdea?.imagem_url) return;
     try {
-      const response = await fetch(activeIdea.imagem_url);
+      const imageUrl = getPublicUrl(activeIdea.imagem_url);
+      const response = await fetch(imageUrl);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${activeIdea.titulo.replace(/\s+/g, '_') || 'arte-gerada'}.jpg`;
+      a.download = `${activeIdea.titulo.replace(/\s+/g, '_') || 'arte-gerada'}.png`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -268,13 +270,13 @@ const ImageIdeaGeneratorPage: React.FC = () => {
                   <Dialog>
                     <DialogTrigger asChild>
                       <img 
-                        src={activeIdea.imagem_url} 
+                        src={getPublicUrl(activeIdea.imagem_url)} 
                         alt={activeIdea.titulo} 
                         className="w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity" 
                       />
                     </DialogTrigger>
                     <DialogContent className="max-w-4xl p-2">
-                      <img src={activeIdea.imagem_url} alt={activeIdea.titulo} className="w-full h-auto rounded-lg" />
+                      <img src={getPublicUrl(activeIdea.imagem_url)} alt={activeIdea.titulo} className="w-full h-auto rounded-lg" />
                     </DialogContent>
                   </Dialog>
 
@@ -324,7 +326,7 @@ const ImageIdeaGeneratorPage: React.FC = () => {
                 {isLoadingHistory ? <Skeleton className="h-full w-full" /> : (
                   history?.map((idea: any) => (
                     <div key={idea.id} onClick={() => setActiveIdea(idea)} className={cn("group flex items-center gap-4 p-2 border-b cursor-pointer hover:bg-muted/50", { "bg-muted": activeIdea?.id === idea.id })}>
-                      <img src={idea.imagem_url || 'https://via.placeholder.com/64'} alt={idea.titulo} className="h-16 w-16 object-cover rounded-md" />
+                      <img src={idea.imagem_url ? getPublicUrl(idea.imagem_url) : 'https://via.placeholder.com/64'} alt={idea.titulo} className="h-16 w-16 object-cover rounded-md" />
                       <div className="flex-grow"><p className="font-semibold">{idea.titulo}</p><p className="text-sm text-muted-foreground">{new Date(idea.criado_em).toLocaleDateString()}</p></div>
                       <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100" onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(idea.id); }}><Trash2 className="h-4 w-4 text-red-500" /></Button>
                     </div>
