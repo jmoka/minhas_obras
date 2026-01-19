@@ -158,8 +158,9 @@ const ImageIdeaGeneratorPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["imageIdeas"] });
       form.reset();
     },
-    onError: (error) => {
-      showError(`Erro ao gerar imagem: ${error.message}`);
+    onError: (error: any) => {
+      const errorMessage = error.context?.json?.error || error.message;
+      showError(`Erro ao gerar imagem: ${errorMessage}`);
     },
   });
 

@@ -138,7 +138,7 @@ const AdminSettingsPage: React.FC = () => {
                   <FormItem>
                     <FormLabel>Chave PIX</FormLabel>
                     <FormControl>
-                      <Input placeholder="Sua chave PIX (CPF, CNPJ, email, etc.)" {...field} />
+                      <Input placeholder="Sua chave PIX (CPF, CNPJ, email, etc.)" {...field} value={field.value || ''} />
                     </FormControl>
                     <FormDescription>
                       Esta chave será exibida na página de doação.
@@ -201,6 +201,7 @@ const AdminSettingsPage: React.FC = () => {
                       <Textarea
                         placeholder="gemini-1.5-flash,gemini-pro,gemini-pro-vision"
                         {...field}
+                        value={field.value || ''}
                       />
                     </FormControl>
                     <FormDescription>
@@ -301,6 +302,7 @@ const AdminSettingsPage: React.FC = () => {
                         placeholder="Ex: Crie um prompt detalhado para um gerador de imagens de IA como Midjourney ou DALL-E, em inglês para melhor compatibilidade, com base nas seguintes características..."
                         className="min-h-[150px]"
                         {...field}
+                        value={field.value || ''}
                       />
                     </FormControl>
                     <FormDescription>
