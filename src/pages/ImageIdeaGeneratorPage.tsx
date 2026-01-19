@@ -65,7 +65,27 @@ const ImageIdeaGeneratorPage: React.FC = () => {
 
   const form = useForm<IdeaFormValues>({
     resolver: zodResolver(ideaSchema),
-    defaultValues: { possui_personagens: false },
+    defaultValues: {
+      titulo: "",
+      descricao_principal: "",
+      tema: "",
+      estilo_artistico: "",
+      referencia_artistica: "",
+      paleta_cores: "",
+      iluminacao: "",
+      atmosfera: "",
+      ambiente: "",
+      possui_personagens: false,
+      descricao_personagens: "",
+      enquadramento: "",
+      nivel_detalhe: "",
+      texturas_materiais: "",
+      qualidade_render: "",
+      formato_imagem: "",
+      resolucao: "",
+      finalidade: "",
+      prompt_negativo: "",
+    },
   });
   const possuiPersonagens = form.watch("possui_personagens");
 
@@ -101,32 +121,36 @@ const ImageIdeaGeneratorPage: React.FC = () => {
           data.finalidade && `**Finalidade:** ${data.finalidade}`,
         ].filter(Boolean).join('\n');
 
-        // O prompt final para a IA é a combinação da instrução de sistema com os detalhes
         return `${systemPart}\n\n${details}`;
       };
 
       const prompt_final = generatePrompt(values);
       const initialIdea = await createImageIdea({ ...values, prompt_final, status: 'PROCESSANDO' });
 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Usuário não autenticado.");
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error("Usuário não autenticado.");
 
-      const { data: generationData, error: generationError } = await supabase.functions.invoke("generate-image-with-gemini", {
-        body: { prompt: prompt_final },
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-      });
+        const { data: generationData, error: generationError } = await supabase.functions.invoke("generate-image-with-gemini", {
+          body: { prompt: prompt_final },
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+        });
 
-      if (generationError) throw generationError;
-      if (generationData.error) throw new Error(generationData.error);
+        if (generationError) throw generationError;
+        if (generationData.error) throw new Error(generationData.error);
 
-      const updatedIdea = await updateImageIdea(initialIdea.id, {
-        imagem_url: generationData.filePath,
-        status: 'GERADO',
-      });
+        const updatedIdea = await updateImageIdea(initialIdea.id, {
+          imagem_url: generationData.filePath,
+          status: 'GERADO',
+        });
 
-      return updatedIdea;
+        return updatedIdea;
+      } catch (error) {
+        await updateImageIdea(initialIdea.id, { status: 'ERRO' });
+        throw error;
+      }
     },
     onSuccess: (data) => {
       showSuccess("Imagem gerada com sucesso!");
@@ -211,32 +235,32 @@ const ImageIdeaGeneratorPage: React.FC = () => {
                     <FormField name="descricao_principal" control={form.control} render={({ field }) => (<FormItem><FormLabel>Descrição Principal</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
                     
                     <div className="grid md:grid-cols-2 gap-4">
-                      <FormField name="tema" control={form.control} render={({ field }) => (<FormItem><FormLabel>Tema</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{temas.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                      <FormField name="estilo_artistico" control={form.control} render={({ field }) => (<FormItem><FormLabel>Estilo Artístico</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{estilos.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      <FormField name="tema" control={form.control} render={({ field }) => (<FormItem><FormLabel>Tema</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{temas.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      <FormField name="estilo_artistico" control={form.control} render={({ field }) => (<FormItem><FormLabel>Estilo Artístico</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{estilos.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                     </div>
                     <FormField name="referencia_artistica" control={form.control} render={({ field }) => (<FormItem><FormLabel>Referência Artística (opcional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
 
                     <div className="grid md:grid-cols-2 gap-4">
-                      <FormField name="paleta_cores" control={form.control} render={({ field }) => (<FormItem><FormLabel>Paleta de Cores</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{paletas.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                      <FormField name="iluminacao" control={form.control} render={({ field }) => (<FormItem><FormLabel>Iluminação</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{iluminacoes.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                      <FormField name="atmosfera" control={form.control} render={({ field }) => (<FormItem><FormLabel>Atmosfera</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{atmosferas.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                      <FormField name="ambiente" control={form.control} render={({ field }) => (<FormItem><FormLabel>Ambiente</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{ambientes.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      <FormField name="paleta_cores" control={form.control} render={({ field }) => (<FormItem><FormLabel>Paleta de Cores</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{paletas.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      <FormField name="iluminacao" control={form.control} render={({ field }) => (<FormItem><FormLabel>Iluminação</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{iluminacoes.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      <FormField name="atmosfera" control={form.control} render={({ field }) => (<FormItem><FormLabel>Atmosfera</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{atmosferas.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      <FormField name="ambiente" control={form.control} render={({ field }) => (<FormItem><FormLabel>Ambiente</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{ambientes.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                     </div>
 
                     <FormField name="possui_personagens" control={form.control} render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-4"><div className="space-y-0.5"><FormLabel>Possui Personagens?</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)} />
                     {possuiPersonagens && <FormField name="descricao_personagens" control={form.control} render={({ field }) => (<FormItem><FormLabel>Descrição dos Personagens</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />}
 
                     <div className="grid md:grid-cols-2 gap-4">
-                      <FormField name="enquadramento" control={form.control} render={({ field }) => (<FormItem><FormLabel>Enquadramento</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{enquadramentos.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                      <FormField name="nivel_detalhe" control={form.control} render={({ field }) => (<FormItem><FormLabel>Nível de Detalhe</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{detalhes.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      <FormField name="enquadramento" control={form.control} render={({ field }) => (<FormItem><FormLabel>Enquadramento</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{enquadramentos.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      <FormField name="nivel_detalhe" control={form.control} render={({ field }) => (<FormItem><FormLabel>Nível de Detalhe</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{detalhes.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                     </div>
                     <FormField name="texturas_materiais" control={form.control} render={({ field }) => (<FormItem><FormLabel>Texturas e Materiais</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
 
                     <div className="grid md:grid-cols-2 gap-4">
-                      <FormField name="qualidade_render" control={form.control} render={({ field }) => (<FormItem><FormLabel>Qualidade</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{qualidades.map(q => <SelectItem key={q} value={q}>{q}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                      <FormField name="formato_imagem" control={form.control} render={({ field }) => (<FormItem><FormLabel>Formato</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{formatos.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                      <FormField name="resolucao" control={form.control} render={({ field }) => (<FormItem><FormLabel>Resolução</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{resolucoes.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                      <FormField name="finalidade" control={form.control} render={({ field }) => (<FormItem><FormLabel>Finalidade</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{finalidades.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      <FormField name="qualidade_render" control={form.control} render={({ field }) => (<FormItem><FormLabel>Qualidade</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{qualidades.map(q => <SelectItem key={q} value={q}>{q}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      <FormField name="formato_imagem" control={form.control} render={({ field }) => (<FormItem><FormLabel>Formato</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{formatos.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      <FormField name="resolucao" control={form.control} render={({ field }) => (<FormItem><FormLabel>Resolução</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{resolucoes.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      <FormField name="finalidade" control={form.control} render={({ field }) => (<FormItem><FormLabel>Finalidade</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{finalidades.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                     </div>
                     
                     <FormField name="prompt_negativo" control={form.control} render={({ field }) => (<FormItem><FormLabel>Prompt Negativo</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -336,7 +360,7 @@ const ImageIdeaGeneratorPage: React.FC = () => {
                       {idea.status === 'GERADO' && idea.imagem_url ? (
                         <img src={getPublicUrl(idea.imagem_url)} alt={idea.titulo} className="h-16 w-16 object-cover rounded-md flex-shrink-0" />
                       ) : (
-                        <div className="h-16 w-16 rounded-md bg-muted flex items-center justify-center flex-shrink-0" title={idea.status === 'PROCESSANDO' ? 'Processando ou falhou' : 'Erro'}>
+                        <div className="h-16 w-16 rounded-md bg-muted flex items-center justify-center flex-shrink-0" title={idea.status === 'PROCESSANDO' ? 'Processando...' : 'Erro na geração'}>
                           {idea.status === 'PROCESSANDO' ? (
                             <Loader2 className="h-6 w-6 text-muted-foreground animate-spin" />
                           ) : (
