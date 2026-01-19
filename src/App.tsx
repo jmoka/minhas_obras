@@ -26,6 +26,7 @@ import AdminSettingsPage from "./pages/AdminSettingsPage";
 import ApiSettingsPage from "./pages/ApiSettingsPage";
 import ArtTutorPage from "./pages/ArtTutorPage";
 import DonationPage from "./pages/DonationPage";
+import ImageIdeaGeneratorPage from "./pages/ImageIdeaGeneratorPage";
 
 const queryClient = new QueryClient();
 
@@ -105,6 +106,11 @@ const App = () => (
               <Route path="/tutor" element={
                 <ProtectedRoute requireUnblocked={true}>
                   <ArtTutorPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/idea-generator" element={
+                <ProtectedRoute requireUnblocked={true}>
+                  <ImageIdeaGeneratorPage />
                 </ProtectedRoute>
               } />
               

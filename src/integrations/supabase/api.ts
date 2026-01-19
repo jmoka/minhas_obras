@@ -818,3 +818,50 @@ export const deleteChatSession = async (sessionId: string) => {
     .eq("id", sessionId);
   if (error) throw new Error("Erro ao deletar sessão.");
 };
+
+// Image Idea Generator Functions
+export const createImageIdea = async (ideaData: any) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Usuário não autenticado.");
+
+  const payload = { ...ideaData, user_id: user.id };
+  const { data, error } = await supabase
+    .from("img_ideias")
+    .insert(payload)
+    .select()
+    .single();
+
+  if (error) throw new Error(`Erro ao salvar ideia: ${error.message}`);
+  return data;
+};
+
+export const updateImageIdea = async (ideaId: string, updateData: any) => {
+  const { data, error } = await supabase
+    .from("img_ideias")
+    .update(updateData)
+    .eq("id", ideaId)
+    .select()
+    .single();
+
+  if (error) throw new Error(`Erro ao atualizar ideia: ${error.message}`);
+  return data;
+};
+
+export const fetchImageIdeas = async () => {
+  const { data, error } = await supabase
+    .from("img_ideias")
+    .select("*")
+    .order("criado_em", { ascending: false });
+
+  if (error) throw new Error(`Erro ao buscar histórico de ideias: ${error.message}`);
+  return data;
+};
+
+export const deleteImageIdea = async (ideaId: string) => {
+  const { error } = await supabase
+    .from("img_ideias")
+    .delete()
+    .eq("id", ideaId);
+
+  if (error) throw new Error(`Erro ao deletar ideia: ${error.message}`);
+};

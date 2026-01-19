@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Palette, User, Plus, Users, LogIn, LogOut, Menu, X, Home, AlertCircle, MessageSquare, Sparkles, Settings, Key, BrainCircuit } from "lucide-react";
+import { Palette, User, Plus, Users, LogIn, LogOut, Menu, X, Home, AlertCircle, MessageSquare, Sparkles, Settings, Key, BrainCircuit, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -124,6 +124,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             {isAuthenticated && (
               <>
                 <NavItem 
+                  to="/idea-generator" 
+                  icon={<Lightbulb className="h-5 w-5" />} 
+                  label="Gerador de Ideias"
+                  onClick={(e) => {
+                    if (profile?.bloc) {
+                      e.preventDefault();
+                      showError('💡 Para usar o gerador de ideias, sua conta precisa ser aprovada.');
+                      navigate('/welcome');
+                    }
+                  }}
+                />
+                <NavItem 
                   to="/tutor" 
                   icon={<BrainCircuit className="h-5 w-5" />} 
                   label="Tutor IA"
@@ -230,6 +242,21 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <NavItem to="/" icon={<Home className="h-5 w-5" />} label="Início" onClick={closeMenu} />
             {isAuthenticated && (
               <>
+                <NavItem 
+                  to="/idea-generator" 
+                  icon={<Lightbulb className="h-5 w-5" />} 
+                  label="Gerador de Ideias" 
+                  onClick={(e) => {
+                    if (profile?.bloc) {
+                      e.preventDefault();
+                      showError('💡 Para usar o gerador de ideias, sua conta precisa ser aprovada.');
+                      navigate('/welcome');
+                      closeMenu();
+                    } else {
+                      closeMenu();
+                    }
+                  }}
+                />
                 <NavItem 
                   to="/tutor" 
                   icon={<BrainCircuit className="h-5 w-5" />} 
