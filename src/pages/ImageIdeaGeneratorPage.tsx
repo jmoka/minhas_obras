@@ -16,7 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import { Lightbulb, Sparkles, History, Trash2, Image as ImageIcon, Download, Copy } from "lucide-react";
+import { Lightbulb, Sparkles, History, Trash2, Image as ImageIcon, Download, Copy, AlertCircle, Loader2 } from "lucide-react";
 import { showSuccess, showError } from "@/utils/toast";
 import { cn } from "@/lib/utils";
 
@@ -140,11 +140,11 @@ const ImageIdeaGeneratorPage: React.FC = () => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: deleteImageIdea,
-    onSuccess: (_, deletedId) => {
+    mutationFn: (idea: { id: string; imagem_url: string | null }) => deleteImageIdea(idea),
+    onSuccess: (_, deletedIdea) => {
       showSuccess("Ideia deletada com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["imageIdeas"] });
-      if (activeIdea?.id === deletedId) {
+      if (activeIdea?.id === deletedIdea.id) {
         setActiveIdea(null);
       }
     },
@@ -325,10 +325,40 @@ const ImageIdeaGeneratorPage: React.FC = () => {
               <ScrollArea className="h-96">
                 {isLoadingHistory ? <Skeleton className="h-full w-full" /> : (
                   history?.map((idea: any) => (
-                    <div key={idea.id} onClick={() => setActiveIdea(idea)} className={cn("group flex items-center gap-4 p-2 border-b cursor-pointer hover:bg-muted/50", { "bg-muted": activeIdea?.id === idea.id })}>
-                      <img src={idea.imagem_url ? getPublicUrl(idea.imagem_url) : 'https://via.placeholder.com/64'} alt={idea.titulo} className="h-16 w-16 object-cover rounded-md" />
-                      <div className="flex-grow"><p className="font-semibold">{idea.titulo}</p><p className="text-sm text-muted-foreground">{new Date(idea.criado_em).toLocaleDateString()}</p></div>
-                      <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100" onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(idea.id); }}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                    <div
+                      key={idea.id}
+                      onClick={() => setActiveIdea(idea)}
+                      className={cn(
+                        "group flex items-center gap-4 p-2 border-b cursor-pointer hover:bg-muted/50",
+                        { "bg-muted": activeIdea?.id === idea.id }
+                      )}
+                    >
+                      {idea.status === 'GERADO' && idea.imagem_url ? (
+                        <img src={getPublicUrl(idea.imagem_url)} alt={idea.titulo} className="h-16 w-16 object-cover rounded-md flex-shrink-0" />
+                      ) : (
+                        <div className="h-16 w-16 rounded-md bg-muted flex items-center justify-center flex-shrink-0" title={idea.status === 'PROCESSANDO' ? 'Processando ou falhou' : 'Erro'}>
+                          {idea.status === 'PROCESSANDO' ? (
+                            <Loader2 className="h-6 w-6 text-muted-foreground animate-spin" />
+                          ) : (
+                            <AlertCircle className="h-6 w-6 text-destructive" />
+                          )}
+                        </div>
+                      )}
+                      <div className="flex-grow min-w-0">
+                        <p className="font-semibold truncate">{idea.titulo}</p>
+                        <p className="text-sm text-muted-foreground">{new Date(idea.criado_em).toLocaleDateString()}</p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="opacity-0 group-hover:opacity-100"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          deleteMutation.mutate({ id: idea.id, imagem_url: idea.imagem_url });
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
                     </div>
                   ))
                 )}

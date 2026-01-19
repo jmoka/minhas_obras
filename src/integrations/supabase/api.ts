@@ -857,11 +857,26 @@ export const fetchImageIdeas = async () => {
   return data;
 };
 
-export const deleteImageIdea = async (ideaId: string) => {
-  const { error } = await supabase
+export const deleteImageIdea = async (idea: { id: string; imagem_url: string | null }) => {
+  // First, delete the image from storage if it exists.
+  if (idea.imagem_url) {
+    const { error: storageError } = await supabase.storage
+      .from(BUCKET_NAME)
+      .remove([idea.imagem_url]);
+
+    if (storageError) {
+      // Log a warning but don't block the DB deletion
+      console.warn(`Could not delete image from storage, but proceeding: ${storageError.message}`);
+    }
+  }
+
+  // Then, delete the record from the database.
+  const { error: dbError } = await supabase
     .from("img_ideias")
     .delete()
-    .eq("id", ideaId);
+    .eq("id", idea.id);
 
-  if (error) throw new Error(`Erro ao deletar ideia: ${error.message}`);
+  if (dbError) {
+    throw new Error(`Erro ao deletar ideia: ${dbError.message}`);
+  }
 };
