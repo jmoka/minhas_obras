@@ -62,7 +62,7 @@ const AdminSettingsPage: React.FC = () => {
       pix_key: "",
       gemini_idea_prompt: "",
       available_gemini_models: "gemini-1.5-flash,gemini-pro,gemini-pro-vision",
-      gemini_image_model_name: "",
+      gemini_image_model_name: "gemini-1.5-flash",
     },
   });
 
@@ -75,7 +75,7 @@ const AdminSettingsPage: React.FC = () => {
         pix_key: settings.pix_key || "",
         gemini_idea_prompt: settings.gemini_idea_prompt || "",
         available_gemini_models: settings.available_gemini_models || "gemini-1.5-flash,gemini-pro,gemini-pro-vision",
-        gemini_image_model_name: settings.gemini_image_model_name || "",
+        gemini_image_model_name: settings.gemini_image_model_name || "gemini-1.5-flash",
       });
     }
   }, [settings, form]);
