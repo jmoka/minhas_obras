@@ -40,18 +40,18 @@ serve(async (req) => {
     // 3. Buscar chave de API, prompt do sistema e nome do modelo
     const { data: apiKeyData, error: apiKeyError } = await supabaseAdmin
       .from('user_api_keys').select('api_key').eq('user_id', user.id).single();
-    if (apiKeyError || !apiKeyData?.api_key) throw new Error("Chave de API do Gemini não configurada.");
+    if (apiKeyError || !apiKeyData?.api_key) throw new Error("Chave de API do Gemini não configurada. Por favor, adicione-a em 'Configurações de API'.");
 
     const { data: promptData, error: promptError } = await supabaseAdmin
       .from('settings').select('value').eq('key', 'gemini_tutor_prompt').single();
-    if (promptError || !promptData?.value) throw new Error("Prompt do sistema para o tutor não configurado pelo admin.");
+    if (promptError || !promptData?.value) throw new Error("Prompt do sistema para o tutor não configurado pelo admin. Por favor, salve as configurações na página de admin.");
 
     const { data: modelData } = await supabaseAdmin
       .from('settings').select('value').eq('key', 'gemini_model_name').single();
 
     const apiKey = apiKeyData.api_key;
     const systemPrompt = promptData.value;
-    const modelName = modelData?.value || "gemini-pro"; // Usa o modelo configurado ou um fallback
+    const modelName = modelData?.value || "gemini-pro";
 
     // 4. Buscar histórico da conversa, se houver
     let currentSessionId = sessionId;
@@ -71,11 +71,22 @@ serve(async (req) => {
 
     // 5. Interagir com a API do Gemini
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ 
-      model: modelName,
-      systemInstruction: systemPrompt,
-    });
-    const chat = model.startChat({ history });
+    const model = genAI.getGenerativeModel({ model: modelName });
+
+    // Prepend system prompt to history if it's a new chat
+    // This is a more compatible way to provide system instructions
+    const chatHistory = [...history];
+    if (chatHistory.length === 0) {
+        chatHistory.unshift({
+            role: "user",
+            parts: [{ text: systemPrompt }]
+        }, {
+            role: "model",
+            parts: [{ text: "Entendido. Estou pronto para ajudar como 'Maestro', seu tutor de arte. Como posso inspirá-lo hoje?" }]
+        });
+    }
+
+    const chat = model.startChat({ history: chatHistory });
     const result = await chat.sendMessage(message);
     const response = await result.response;
     const modelResponseText = response.text();
@@ -91,6 +102,7 @@ serve(async (req) => {
       currentSessionId = newSession.id;
     }
 
+    // Don't save the prepended system prompt to the DB
     const messagesToInsert = [
       { session_id: currentSessionId, role: 'user', content: message },
       { session_id: currentSessionId, role: 'model', content: modelResponseText },
@@ -109,8 +121,15 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error(`[${functionName}] Erro:`, error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error(`[${functionName}] Erro Detalhado:`, JSON.stringify(error, null, 2));
+    let errorMessage = error.message;
+    // Provide more helpful error messages to the user
+    if (errorMessage.includes("API key not valid")) {
+      errorMessage = "Sua chave de API do Gemini não é válida. Verifique-a em 'Configurações de API'.";
+    } else if (errorMessage.includes("billing")) {
+      errorMessage = "Erro de faturamento com a API do Gemini. Verifique sua conta Google Cloud.";
+    }
+    return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
