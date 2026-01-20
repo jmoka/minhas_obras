@@ -49,16 +49,22 @@ serve(async (req) => {
       .from('settings').select('value').eq('key', 'gemini_image_model_name').single();
     
     const apiKey = apiKeyData.api_key;
-    const modelName = modelData?.value;
+    let modelToUse = modelData?.value;
 
-    if (!modelName) {
+    // Fallback mechanism to prevent quota errors on problematic models
+    if (!modelToUse || modelToUse.includes('gemini-3-pro')) {
+      console.warn(`[${functionName}] Model '${modelToUse}' is not configured or is problematic. Falling back to 'gemini-1.5-flash'.`);
+      modelToUse = 'gemini-1.5-flash';
+    }
+
+    if (!modelToUse) {
       console.error(`[${functionName}] O modelo de imagem não está configurado nas Configurações de Administrador.`);
       throw new Error("O modelo de IA para geração de imagem não foi configurado pelo administrador.");
     }
 
     // 4. Interagir com a API do Gemini para gerar a imagem
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: modelName });
+    const model = genAI.getGenerativeModel({ model: modelToUse });
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -67,9 +73,9 @@ serve(async (req) => {
     const imagePart = response.candidates?.[0]?.content?.parts?.[0];
     if (!imagePart || !('inlineData' in imagePart)) {
       const textResponse = response.text();
-      console.error(`[${functionName}] A resposta da IA não continha uma imagem. Modelo usado: '${modelName}'. Resposta recebida:`, textResponse);
+      console.error(`[${functionName}] A resposta da IA não continha uma imagem. Modelo usado: '${modelToUse}'. Resposta recebida:`, textResponse);
       return new Response(JSON.stringify({ 
-        error: `O modelo '${modelName}' não retornou uma imagem. Verifique se o modelo correto para geração de imagem está configurado pelo administrador.` 
+        error: `O modelo '${modelToUse}' não retornou uma imagem. Verifique se o modelo correto para geração de imagem está configurado pelo administrador.` 
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
