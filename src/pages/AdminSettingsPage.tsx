@@ -12,7 +12,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { showSuccess, showError } from "@/utils/toast";
 import { Save, BrainCircuit, MessageCircle, Key, Lightbulb } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const settingsSchema = z.object({
   gemini_tutor_prompt: z.string().min(10, "O prompt do sistema parece muito curto."),
@@ -82,20 +81,6 @@ const AdminSettingsPage: React.FC = () => {
 
   const formValues = form.watch();
 
-  const availableModels = useMemo(() => {
-    const baseModels = formValues.available_gemini_models?.split(',').map(m => m.trim()).filter(Boolean) || [];
-    const modelSet = new Set(baseModels);
-
-    if (formValues.gemini_model_name) {
-      modelSet.add(formValues.gemini_model_name);
-    }
-    if (formValues.gemini_image_model_name) {
-      modelSet.add(formValues.gemini_image_model_name);
-    }
-
-    return Array.from(modelSet).filter(Boolean);
-  }, [formValues.available_gemini_models, formValues.gemini_model_name, formValues.gemini_image_model_name]);
-
   const mutation = useMutation({
     mutationFn: async (values: SettingsFormValues) => {
       const settingsToUpdate = [
@@ -155,7 +140,7 @@ const AdminSettingsPage: React.FC = () => {
                   <FormItem>
                     <FormLabel>Chave PIX</FormLabel>
                     <FormControl>
-                      <Input placeholder="Sua chave PIX (CPF, CNPJ, email, etc.)" {...field} value={field.value || ''} />
+                      <Input placeholder="Sua chave PIX (CPF, CNPJ, email, etc.)" {...field} />
                     </FormControl>
                     <FormDescription>
                       Esta chave será exibida na página de doação.
@@ -218,7 +203,6 @@ const AdminSettingsPage: React.FC = () => {
                       <Textarea
                         placeholder="gemini-1.5-flash,gemini-pro,gemini-pro-vision"
                         {...field}
-                        value={field.value || ''}
                       />
                     </FormControl>
                     <FormDescription>
@@ -234,16 +218,9 @@ const AdminSettingsPage: React.FC = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Modelo Padrão (Tutor de Arte)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ''}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione um modelo" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {availableModels.map(model => <SelectItem key={model} value={model}>{model}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <Input placeholder="gemini-pro" {...field} />
+                    </FormControl>
                     <FormDescription>
                       Este será o modelo padrão para o chat do Tutor de Arte.
                     </FormDescription>
@@ -257,16 +234,9 @@ const AdminSettingsPage: React.FC = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Modelo de Imagem (Gerador de Ideias)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ''}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione um modelo" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {availableModels.map(model => <SelectItem key={model} value={model}>{model}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <FormControl>
+                      <Input placeholder="gemini-1.5-flash" {...field} />
+                    </FormControl>
                     <FormDescription>
                       Este modelo será usado para gerar as imagens. Recomenda-se 'gemini-1.5-flash'.
                     </FormDescription>
@@ -319,7 +289,6 @@ const AdminSettingsPage: React.FC = () => {
                         placeholder="Ex: Crie um prompt detalhado para um gerador de imagens de IA como Midjourney ou DALL-E, em inglês para melhor compatibilidade, com base nas seguintes características..."
                         className="min-h-[150px]"
                         {...field}
-                        value={field.value || ''}
                       />
                     </FormControl>
                     <FormDescription>

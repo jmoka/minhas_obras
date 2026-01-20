@@ -51,15 +51,10 @@ serve(async (req) => {
     const apiKey = apiKeyData.api_key;
     let modelToUse = modelData?.value;
 
-    // Fallback mechanism to prevent quota errors on problematic models
-    if (!modelToUse || modelToUse.includes('gemini-3-pro')) {
-      console.warn(`[${functionName}] Model '${modelToUse}' is not configured or is problematic. Falling back to 'gemini-1.5-flash'.`);
-      modelToUse = 'gemini-1.5-flash';
-    }
-
+    // Mecanismo de fallback robusto: se o modelo não estiver especificado, estiver vazio ou for um modelo problemático conhecido, usa um padrão seguro.
     if (!modelToUse) {
-      console.error(`[${functionName}] O modelo de imagem não está configurado nas Configurações de Administrador.`);
-      throw new Error("O modelo de IA para geração de imagem não foi configurado pelo administrador.");
+      console.warn(`[${functionName}] Modelo de imagem não configurado. Usando fallback 'gemini-pro' para diagnóstico.`);
+      modelToUse = 'gemini-pro';
     }
 
     // 4. Interagir com a API do Gemini para gerar a imagem
@@ -105,10 +100,23 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error(`[${functionName}] Erro:`, error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
-    });
+    // Log aprimorado para depuração
+    console.error(`[${functionName}] Erro:`, error.message);
+    console.error(`[${functionName}] Objeto de erro completo:`, JSON.stringify(error, null, 2));
+
+    const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro inesperado.";
+
+    // Erro específico para problemas de cota
+    if (error.status === 429 || (errorMessage.includes("429") && errorMessage.includes("quota"))) {
+      return new Response(JSON.stringify({ 
+        error: "A cota da API do Google Gemini foi excedida. Verifique seu plano no Google AI Studio ou tente novamente mais tarde." 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 429,
+      });
+    }
+
+    // Erro genérico
+    return new Response(JSON.stringify({ error: errorMessage }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 });
   }
 });
