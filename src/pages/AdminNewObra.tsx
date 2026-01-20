@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { CalendarIcon, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +44,7 @@ type ObraFormValues = z.infer<typeof formSchema> & {
 const AdminNewObra: React.FC = () => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<ObraFormValues>({
@@ -56,6 +57,17 @@ const AdminNewObra: React.FC = () => {
       email_dono: "",
     },
   });
+
+  useEffect(() => {
+    const { analysis, imageFile } = location.state || {};
+    if (analysis) {
+      form.setValue('titulo', analysis.suggested_title || '');
+      form.setValue('descricao', analysis.description || '');
+    }
+    if (imageFile instanceof File) {
+      form.setValue('imgFile', imageFile);
+    }
+  }, [location.state, form]);
 
   const handleFileUpload = async (file: File | undefined, folder: string): Promise<string | null> => {
     if (!file) return null;

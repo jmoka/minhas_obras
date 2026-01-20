@@ -29,7 +29,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Upload, Sparkles, Lightbulb, Palette, MessageSquare, History, Image as ImageIcon, Trash2, AlertCircle, Key, Check, Link as LinkIcon } from "lucide-react";
+import { Upload, Sparkles, Lightbulb, Palette, MessageSquare, History, Image as ImageIcon, Trash2, AlertCircle, Key, Check, Link as LinkIcon, Edit, Plus } from "lucide-react";
 import { showSuccess, showError } from "@/utils/toast";
 import { Link, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -271,12 +271,12 @@ const ArtworkAnalyzerPage: React.FC = () => {
                     3. Próximo Passo
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="flex flex-col sm:flex-row gap-4">
                   <Dialog open={isApplyDialogOpen} onOpenChange={setIsApplyDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button className="w-full">
-                        <Check className="mr-2 h-4 w-4" />
-                        Usar esta Análise em uma Obra
+                      <Button className="w-full" variant="outline">
+                        <Edit className="mr-2 h-4 w-4" />
+                        Aplicar a uma Obra Existente
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-[600px]">
@@ -323,6 +323,12 @@ const ArtworkAnalyzerPage: React.FC = () => {
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
+                  <Link to="/admin/new-obra" state={{ analysis: activeAnalysis, imageFile: form.getValues('image') }} className="w-full">
+                    <Button className="w-full">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Criar Nova Obra com esta Análise
+                    </Button>
+                  </Link>
                 </CardContent>
               </Card>
             </div>
