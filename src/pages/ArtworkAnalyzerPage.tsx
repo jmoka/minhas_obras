@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { analyzeArtwork, fetchAnalysisHistory, getPublicUrl, deleteAnalysis, getUserApiKeyStatus, fetchObras, updateObraDetails } from "@/integrations/supabase/api";
+import { analyzeArtwork, fetchAnalysisHistory, getPublicUrl, deleteAnalysis, checkUserApiKeysStatus, fetchObras, updateObraDetails } from "@/integrations/supabase/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -56,7 +56,7 @@ const ArtworkAnalyzerPage: React.FC = () => {
 
   const { data: apiKeyStatus, isLoading: isLoadingKeyStatus } = useQuery({
     queryKey: ["userApiKeyStatus"],
-    queryFn: getUserApiKeyStatus,
+    queryFn: checkUserApiKeysStatus,
   });
 
   const { data: history, isLoading: isLoadingHistory } = useQuery({
@@ -67,7 +67,7 @@ const ArtworkAnalyzerPage: React.FC = () => {
   const { data: myObras, isLoading: isLoadingMyObras } = useQuery({
     queryKey: ["myObras"],
     queryFn: fetchObras,
-    enabled: !!apiKeyStatus?.isSet,
+    enabled: !!apiKeyStatus?.isGeminiSet,
   });
 
   const analysisMutation = useMutation({
@@ -172,7 +172,7 @@ const ArtworkAnalyzerPage: React.FC = () => {
             <CardContent>
               {isLoadingKeyStatus ? (
                 <Skeleton className="h-40 w-full" />
-              ) : !apiKeyStatus?.isSet ? (
+              ) : !apiKeyStatus?.isGeminiSet ? (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>Configuração de API Necessária</AlertTitle>
@@ -207,7 +207,7 @@ const ArtworkAnalyzerPage: React.FC = () => {
                         <img src={selectedImage} alt="Pré-visualização" className="max-h-64 w-auto mx-auto rounded-lg" />
                       </div>
                     )}
-                    <Button type="submit" className="w-full" disabled={analysisMutation.isPending || !apiKeyStatus?.isSet}>
+                    <Button type="submit" className="w-full" disabled={analysisMutation.isPending || !apiKeyStatus?.isGeminiSet}>
                       {analysisMutation.isPending ? "Analisando..." : (
                         <>
                           <Sparkles className="mr-2 h-4 w-4" />

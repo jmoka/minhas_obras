@@ -765,7 +765,7 @@ export const deleteUserApiKey = async (keyType: 'gemini' | 'pexels') => {
   return data;
 };
 
-export const getUserApiKeysStatus = async (): Promise<{ isGeminiSet: boolean; isPexelsSet: boolean }> => {
+export const checkUserApiKeysStatus = async (): Promise<{ isGeminiSet: boolean; isPexelsSet: boolean }> => {
   const { data, error } = await supabase
     .from("user_api_keys")
     .select("api_key, pexels_api_key")
