@@ -1,22 +1,21 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createImageIdea, updateImageIdea, fetchImageIdeas, deleteImageIdea, getSetting, getPublicUrl } from "@/integrations/supabase/api";
-import { supabase } from "@/integrations/supabase/client";
+import { createImageIdea, updateImageIdea, fetchImageIdeas, deleteImageIdea, getSetting } from "@/integrations/supabase/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import { Lightbulb, Sparkles, History, Trash2, Image as ImageIcon, Download, Copy, AlertCircle, Loader2 } from "lucide-react";
+import { Lightbulb, Sparkles, History, Trash2, Image as ImageIcon, Download, Copy } from "lucide-react";
 import { showSuccess, showError } from "@/utils/toast";
 import { cn } from "@/lib/utils";
 
@@ -65,27 +64,7 @@ const ImageIdeaGeneratorPage: React.FC = () => {
 
   const form = useForm<IdeaFormValues>({
     resolver: zodResolver(ideaSchema),
-    defaultValues: {
-      titulo: "",
-      descricao_principal: "",
-      tema: "",
-      estilo_artistico: "",
-      referencia_artistica: "",
-      paleta_cores: "",
-      iluminacao: "",
-      atmosfera: "",
-      ambiente: "",
-      possui_personagens: false,
-      descricao_personagens: "",
-      enquadramento: "",
-      nivel_detalhe: "",
-      texturas_materiais: "",
-      qualidade_render: "",
-      formato_imagem: "",
-      resolucao: "",
-      finalidade: "",
-      prompt_negativo: "",
-    },
+    defaultValues: { possui_personagens: false },
   });
   const possuiPersonagens = form.watch("possui_personagens");
 
@@ -102,57 +81,45 @@ const ImageIdeaGeneratorPage: React.FC = () => {
   const generateMutation = useMutation({
     mutationFn: async (values: IdeaFormValues) => {
       const generatePrompt = (data: IdeaFormValues): string => {
-        // This prompt is now designed to instruct an image generation model directly.
-        const systemPart = ideaSystemPrompt || "Generate a high-quality, detailed image based on the following description. The prompt should be interpreted for direct image creation. Prioritize visual elements over narrative. Use English for best compatibility with image models.";
+        const systemPart = ideaSystemPrompt || "Crie um prompt de imagem detalhado para um gerador de IA como Midjourney ou DALL-E, baseado nas seguintes especificações. O prompt deve ser em inglês para melhor compatibilidade, mas use as palavras-chave fornecidas.";
 
         const details = [
-          `Primary subject: ${data.descricao_principal}`,
-          data.tema && `Theme: ${data.tema}`,
-          data.estilo_artistico && `Artistic style: ${data.estilo_artistico}`,
-          data.referencia_artistica && `Inspired by the art of: ${data.referencia_artistica}`,
-          data.paleta_cores && `Color palette: ${data.paleta_cores}`,
-          data.iluminacao && `Lighting: ${data.iluminacao}`,
-          data.atmosfera && `Atmosphere: ${data.atmosfera}`,
-          data.ambiente && `Setting/Environment: ${data.ambiente}`,
-          data.possui_personagens && `Characters: ${data.descricao_personagens || 'Characters are present'}`,
-          data.enquadramento && `Framing: ${data.enquadramento}`,
-          data.nivel_detalhe && `Level of detail: ${data.nivel_detalhe}`,
-          data.texturas_materiais && `Textures and materials: ${data.texturas_materiais}`,
-          data.qualidade_render && `Render quality: ${data.qualidade_render}`,
-          data.formato_imagem && `Aspect ratio: ${data.formato_imagem}`,
-          data.prompt_negativo && `Negative prompt: ${data.prompt_negativo}`,
+          data.descricao_principal,
+          data.tema && `tema: ${data.tema}`,
+          data.estilo_artistico && `estilo: ${data.estilo_artistico}`,
+          data.referencia_artistica && `inspirado por: ${data.referencia_artistica}`,
+          data.paleta_cores && `cores: ${data.paleta_cores}`,
+          data.iluminacao && `iluminação: ${data.iluminacao}`,
+          data.atmosfera && `atmosfera: ${data.atmosfera}`,
+          data.ambiente && `ambiente: ${data.ambiente}`,
+          data.possui_personagens && `personagens: ${data.descricao_personagens || 'presentes'}`,
+          data.enquadramento && `enquadramento: ${data.enquadramento}`,
+          data.nivel_detalhe && `detalhes: ${data.nivel_detalhe}`,
+          data.texturas_materiais && `texturas: ${data.texturas_materiais}`,
+          data.qualidade_render && `qualidade: ${data.qualidade_render}`,
+          data.formato_imagem && `--ar ${data.formato_imagem.replace(':', ' ')}`,
+          data.resolucao && `resolução: ${data.resolucao}`,
+          data.finalidade && `finalidade: ${data.finalidade}`,
         ].filter(Boolean).join(', ');
 
-        return `${systemPart}\n\nPROMPT: ${details}`;
+        const negativePrompt = data.prompt_negativo ? ` --no ${data.prompt_negativo}` : '';
+
+        return `${systemPart}\n\n${details}${negativePrompt}`;
       };
 
       const prompt_final = generatePrompt(values);
-      const initialIdea = await createImageIdea({ ...values, prompt_final, status: 'PROCESSANDO' });
+      const initialIdea = await createImageIdea({ ...values, prompt_final });
 
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) throw new Error("Usuário não autenticado.");
+      // SIMULAÇÃO DA CHAMADA À IA
+      await new Promise(resolve => setTimeout(resolve, 3000)); 
+      const placeholderUrl = `https://picsum.photos/seed/${initialIdea.id}/1024`;
 
-        const { data: generationData, error: generationError } = await supabase.functions.invoke("generate-image-with-gemini", {
-          body: { prompt: prompt_final },
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-        });
+      const updatedIdea = await updateImageIdea(initialIdea.id, {
+        imagem_url: placeholderUrl,
+        status: 'GERADO',
+      });
 
-        if (generationError) throw generationError;
-        if (generationData.error) throw new Error(generationData.error);
-
-        const updatedIdea = await updateImageIdea(initialIdea.id, {
-          imagem_url: generationData.filePath,
-          status: 'GERADO',
-        });
-
-        return updatedIdea;
-      } catch (error) {
-        await updateImageIdea(initialIdea.id, { status: 'ERRO' });
-        throw error;
-      }
+      return updatedIdea;
     },
     onSuccess: (data) => {
       showSuccess("Imagem gerada com sucesso!");
@@ -160,18 +127,17 @@ const ImageIdeaGeneratorPage: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ["imageIdeas"] });
       form.reset();
     },
-    onError: (error: any) => {
-      const errorMessage = error.context?.json?.error || error.message;
-      showError(`Erro ao gerar imagem: ${errorMessage}`);
+    onError: (error) => {
+      showError(`Erro ao gerar imagem: ${error.message}`);
     },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (idea: { id: string; imagem_url: string | null }) => deleteImageIdea(idea),
-    onSuccess: (_, deletedIdea) => {
+    mutationFn: deleteImageIdea,
+    onSuccess: (_, deletedId) => {
       showSuccess("Ideia deletada com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["imageIdeas"] });
-      if (activeIdea?.id === deletedIdea.id) {
+      if (activeIdea?.id === deletedId) {
         setActiveIdea(null);
       }
     },
@@ -185,13 +151,12 @@ const ImageIdeaGeneratorPage: React.FC = () => {
   const handleDownload = async () => {
     if (!activeIdea?.imagem_url) return;
     try {
-      const imageUrl = getPublicUrl(activeIdea.imagem_url);
-      const response = await fetch(imageUrl);
+      const response = await fetch(activeIdea.imagem_url);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${activeIdea.titulo.replace(/\s+/g, '_') || 'arte-gerada'}.png`;
+      a.download = `${activeIdea.titulo.replace(/\s+/g, '_') || 'arte-gerada'}.jpg`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -238,34 +203,33 @@ const ImageIdeaGeneratorPage: React.FC = () => {
                     <FormField name="descricao_principal" control={form.control} render={({ field }) => (<FormItem><FormLabel>Descrição Principal</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
                     
                     <div className="grid md:grid-cols-2 gap-4">
-                      <FormField name="tema" control={form.control} render={({ field }) => (<FormItem><FormLabel>Tema</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{temas.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                      <FormField name="estilo_artistico" control={form.control} render={({ field }) => (<FormItem><FormLabel>Estilo Artístico</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{estilos.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      <FormField name="tema" control={form.control} render={({ field }) => (<FormItem><FormLabel>Tema</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{temas.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      <FormField name="estilo_artistico" control={form.control} render={({ field }) => (<FormItem><FormLabel>Estilo Artístico</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{estilos.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                     </div>
                     <FormField name="referencia_artistica" control={form.control} render={({ field }) => (<FormItem><FormLabel>Referência Artística (opcional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
 
                     <div className="grid md:grid-cols-2 gap-4">
-                      <FormField name="paleta_cores" control={form.control} render={({ field }) => (<FormItem><FormLabel>Paleta de Cores</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{paletas.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                      <FormField name="iluminacao" control={form.control} render={({ field }) => (<FormItem><FormLabel>Iluminação</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{iluminacoes.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                      <FormField name="atmosfera" control={form.control} render={({ field }) => (<FormItem><FormLabel>Atmosfera</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{atmosferas.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                      <FormField name="ambiente" control={form.control} render={({ field }) => (<FormItem><FormLabel>Ambiente</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{ambientes.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      <FormField name="paleta_cores" control={form.control} render={({ field }) => (<FormItem><FormLabel>Paleta de Cores</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{paletas.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      <FormField name="iluminacao" control={form.control} render={({ field }) => (<FormItem><FormLabel>Iluminação</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{iluminacoes.map(i => <SelectItem key={i} value={i}>{i}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      <FormField name="atmosfera" control={form.control} render={({ field }) => (<FormItem><FormLabel>Atmosfera</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{atmosferas.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      <FormField name="ambiente" control={form.control} render={({ field }) => (<FormItem><FormLabel>Ambiente</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{ambientes.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                     </div>
 
                     <FormField name="possui_personagens" control={form.control} render={({ field }) => (<FormItem className="flex flex-row items-center justify-between rounded-lg border p-4"><div className="space-y-0.5"><FormLabel>Possui Personagens?</FormLabel></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>)} />
                     {possuiPersonagens && <FormField name="descricao_personagens" control={form.control} render={({ field }) => (<FormItem><FormLabel>Descrição dos Personagens</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />}
 
                     <div className="grid md:grid-cols-2 gap-4">
-                      <FormField name="enquadramento" control={form.control} render={({ field }) => (<FormItem><FormLabel>Enquadramento</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{enquadramentos.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                      <FormField name="nivel_detalhe" control={form.control} render={({ field }) => (<FormItem><FormLabel>Nível de Detalhe</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{detalhes.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      <FormField name="enquadramento" control={form.control} render={({ field }) => (<FormItem><FormLabel>Enquadramento</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{enquadramentos.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      <FormField name="nivel_detalhe" control={form.control} render={({ field }) => (<FormItem><FormLabel>Nível de Detalhe</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{detalhes.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                     </div>
                     <FormField name="texturas_materiais" control={form.control} render={({ field }) => (<FormItem><FormLabel>Texturas e Materiais</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
 
                     <div className="grid md:grid-cols-2 gap-4">
-                      <FormField name="qualidade_render" control={form.control} render={({ field }) => (<FormItem><FormLabel>Qualidade</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{qualidades.map(q => <SelectItem key={q} value={q}>{q}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                      <FormField name="formato_imagem" control={form.control} render={({ field }) => (<FormItem><FormLabel>Formato</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{formatos.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                      <FormField name="resolucao" control={form.control} render={({ field }) => (<FormItem><FormLabel>Resolução</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{resolucoes.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                      <FormField name="finalidade" control={form.control} render={({ field }) => (<FormItem><FormLabel>Finalidade</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{finalidades.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      <FormField name="qualidade_render" control={form.control} render={({ field }) => (<FormItem><FormLabel>Qualidade</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{qualidades.map(q => <SelectItem key={q} value={q}>{q}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      <FormField name="formato_imagem" control={form.control} render={({ field }) => (<FormItem><FormLabel>Formato</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{formatos.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      <FormField name="resolucao" control={form.control} render={({ field }) => (<FormItem><FormLabel>Resolução</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{resolucoes.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                      <FormField name="finalidade" control={form.control} render={({ field }) => (<FormItem><FormLabel>Finalidade</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl><SelectContent>{finalidades.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                     </div>
-                    
                     <FormField name="prompt_negativo" control={form.control} render={({ field }) => (<FormItem><FormLabel>Prompt Negativo</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>)} />
                   </div>
                 </ScrollArea>
@@ -297,13 +261,13 @@ const ImageIdeaGeneratorPage: React.FC = () => {
                   <Dialog>
                     <DialogTrigger asChild>
                       <img 
-                        src={getPublicUrl(activeIdea.imagem_url)} 
+                        src={activeIdea.imagem_url} 
                         alt={activeIdea.titulo} 
                         className="w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity" 
                       />
                     </DialogTrigger>
                     <DialogContent className="max-w-4xl p-2">
-                      <img src={getPublicUrl(activeIdea.imagem_url)} alt={activeIdea.titulo} className="w-full h-auto rounded-lg" />
+                      <img src={activeIdea.imagem_url} alt={activeIdea.titulo} className="w-full h-auto rounded-lg" />
                     </DialogContent>
                   </Dialog>
 
@@ -352,40 +316,10 @@ const ImageIdeaGeneratorPage: React.FC = () => {
               <ScrollArea className="h-96">
                 {isLoadingHistory ? <Skeleton className="h-full w-full" /> : (
                   history?.map((idea: any) => (
-                    <div
-                      key={idea.id}
-                      onClick={() => setActiveIdea(idea)}
-                      className={cn(
-                        "group flex items-center gap-4 p-2 border-b cursor-pointer hover:bg-muted/50",
-                        { "bg-muted": activeIdea?.id === idea.id }
-                      )}
-                    >
-                      {idea.status === 'GERADO' && idea.imagem_url ? (
-                        <img src={getPublicUrl(idea.imagem_url)} alt={idea.titulo} className="h-16 w-16 object-cover rounded-md flex-shrink-0" />
-                      ) : (
-                        <div className="h-16 w-16 rounded-md bg-muted flex items-center justify-center flex-shrink-0" title={idea.status === 'PROCESSANDO' ? 'Processando...' : 'Erro na geração'}>
-                          {idea.status === 'PROCESSANDO' ? (
-                            <Loader2 className="h-6 w-6 text-muted-foreground animate-spin" />
-                          ) : (
-                            <AlertCircle className="h-6 w-6 text-destructive" />
-                          )}
-                        </div>
-                      )}
-                      <div className="flex-grow min-w-0">
-                        <p className="font-semibold truncate">{idea.titulo}</p>
-                        <p className="text-sm text-muted-foreground">{new Date(idea.criado_em).toLocaleDateString()}</p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="opacity-0 group-hover:opacity-100"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteMutation.mutate({ id: idea.id, imagem_url: idea.imagem_url });
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
+                    <div key={idea.id} onClick={() => setActiveIdea(idea)} className={cn("group flex items-center gap-4 p-2 border-b cursor-pointer hover:bg-muted/50", { "bg-muted": activeIdea?.id === idea.id })}>
+                      <img src={idea.imagem_url || 'https://via.placeholder.com/64'} alt={idea.titulo} className="h-16 w-16 object-cover rounded-md" />
+                      <div className="flex-grow"><p className="font-semibold">{idea.titulo}</p><p className="text-sm text-muted-foreground">{new Date(idea.criado_em).toLocaleDateString()}</p></div>
+                      <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100" onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(idea.id); }}><Trash2 className="h-4 w-4 text-red-500" /></Button>
                     </div>
                   ))
                 )}

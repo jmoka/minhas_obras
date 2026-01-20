@@ -715,17 +715,6 @@ export const setSetting = async (key: string, value: string): Promise<void> => {
   }
 };
 
-export const setSettings = async (settings: { key: string; value: string }[]): Promise<void> => {
-  const { error } = await supabase
-    .from("settings")
-    .upsert(settings, { onConflict: 'key' });
-
-  if (error) {
-    console.error(`Error setting multiple settings:`, error);
-    throw new Error(`Não foi possível salvar as configurações: ${error.message}`);
-  }
-};
-
 // User API Key Functions
 export const saveUserApiKey = async (apiKey: string) => {
   const { data: { session } } = await supabase.auth.getSession();
@@ -806,12 +795,12 @@ export const fetchChatMessages = async (sessionId: string) => {
   return data;
 };
 
-export const sendChatMessageToTutor = async (sessionId: string | null, message: string, modelName: string) => {
+export const sendChatMessageToTutor = async (sessionId: string | null, message: string) => {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error("Usuário não autenticado.");
 
   const { data, error } = await supabase.functions.invoke("gemini-chat", {
-    body: { sessionId, message, modelName },
+    body: { sessionId, message },
     headers: {
       'Authorization': `Bearer ${session.access_token}`,
     },
@@ -868,26 +857,11 @@ export const fetchImageIdeas = async () => {
   return data;
 };
 
-export const deleteImageIdea = async (idea: { id: string; imagem_url: string | null }) => {
-  // First, delete the image from storage if it exists.
-  if (idea.imagem_url) {
-    const { error: storageError } = await supabase.storage
-      .from(BUCKET_NAME)
-      .remove([idea.imagem_url]);
-
-    if (storageError) {
-      // Log a warning but don't block the DB deletion
-      console.warn(`Could not delete image from storage, but proceeding: ${storageError.message}`);
-    }
-  }
-
-  // Then, delete the record from the database.
-  const { error: dbError } = await supabase
+export const deleteImageIdea = async (ideaId: string) => {
+  const { error } = await supabase
     .from("img_ideias")
     .delete()
-    .eq("id", idea.id);
+    .eq("id", ideaId);
 
-  if (dbError) {
-    throw new Error(`Erro ao deletar ideia: ${dbError.message}`);
-  }
+  if (error) throw new Error(`Erro ao deletar ideia: ${error.message}`);
 };

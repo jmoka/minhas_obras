@@ -1,9 +1,9 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getSetting, setSettings } from "@/integrations/supabase/api";
+import { getSetting, setSetting } from "@/integrations/supabase/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -12,18 +12,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { showSuccess, showError } from "@/utils/toast";
 import { Save, BrainCircuit, MessageCircle, Key, Lightbulb } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const settingsSchema = z.object({
   gemini_tutor_prompt: z.string().min(10, "O prompt do sistema parece muito curto."),
-  gemini_model_name: z.string().min(1, "É necessário selecionar um modelo padrão."),
+  gemini_model_name: z.string().min(3, "O nome do modelo parece muito curto."),
   admin_whatsapp: z.string().refine(val => /^\+\d{10,15}$/.test(val) || val === '', {
     message: "Formato inválido. Use o formato internacional, ex: +5511999999999"
   }),
   pix_key: z.string().optional(),
   gemini_idea_prompt: z.string().optional(),
-  available_gemini_models: z.string().optional(),
-  gemini_image_model_name: z.string().optional(),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -39,16 +36,12 @@ const AdminSettingsPage: React.FC = () => {
       const adminWhatsApp = await getSetting("admin_whatsapp");
       const pixKey = await getSetting("pix_key");
       const ideaPrompt = await getSetting("gemini_idea_prompt");
-      const availableModels = await getSetting("available_gemini_models");
-      const imageModelName = await getSetting("gemini_image_model_name");
       return { 
         gemini_tutor_prompt: tutorPrompt,
         gemini_model_name: modelName,
         admin_whatsapp: adminWhatsApp,
         pix_key: pixKey,
         gemini_idea_prompt: ideaPrompt,
-        available_gemini_models: availableModels,
-        gemini_image_model_name: imageModelName,
       };
     },
   });
@@ -57,12 +50,10 @@ const AdminSettingsPage: React.FC = () => {
     resolver: zodResolver(settingsSchema),
     defaultValues: {
       gemini_tutor_prompt: "",
-      gemini_model_name: "",
+      gemini_model_name: "gemini-pro",
       admin_whatsapp: "",
       pix_key: "",
       gemini_idea_prompt: "",
-      available_gemini_models: "gemini-1.5-pro,gemini-1.5-flash,gemini-pro,gemini-pro-vision",
-      gemini_image_model_name: "gemini-1.5-pro",
     },
   });
 
@@ -70,37 +61,21 @@ const AdminSettingsPage: React.FC = () => {
     if (settings) {
       form.reset({
         gemini_tutor_prompt: settings.gemini_tutor_prompt || "",
-        gemini_model_name: settings.gemini_model_name || "gemini-1.5-flash",
+        gemini_model_name: settings.gemini_model_name || "gemini-pro",
         admin_whatsapp: settings.admin_whatsapp || "",
         pix_key: settings.pix_key || "",
         gemini_idea_prompt: settings.gemini_idea_prompt || "",
-        available_gemini_models: settings.available_gemini_models || "gemini-1.5-pro,gemini-1.5-flash,gemini-pro,gemini-pro-vision",
-        gemini_image_model_name: settings.gemini_image_model_name || "gemini-1.5-pro",
       });
     }
   }, [settings, form]);
 
-  const formValues = form.watch();
-
-  const availableModels = useMemo(() => {
-    return (formValues.available_gemini_models || "")
-      .split(',')
-      .map(m => m.trim())
-      .filter(Boolean);
-  }, [formValues.available_gemini_models]);
-
   const mutation = useMutation({
     mutationFn: async (values: SettingsFormValues) => {
-      const settingsToUpdate = [
-        { key: "gemini_tutor_prompt", value: values.gemini_tutor_prompt },
-        { key: "gemini_model_name", value: values.gemini_model_name },
-        { key: "admin_whatsapp", value: values.admin_whatsapp },
-        { key: "pix_key", value: values.pix_key || "" },
-        { key: "gemini_idea_prompt", value: values.gemini_idea_prompt || "" },
-        { key: "available_gemini_models", value: values.available_gemini_models || "" },
-        { key: "gemini_image_model_name", value: values.gemini_image_model_name || "" },
-      ];
-      await setSettings(settingsToUpdate);
+      await setSetting("gemini_tutor_prompt", values.gemini_tutor_prompt);
+      await setSetting("gemini_model_name", values.gemini_model_name);
+      await setSetting("admin_whatsapp", values.admin_whatsapp);
+      await setSetting("pix_key", values.pix_key || "");
+      await setSetting("gemini_idea_prompt", values.gemini_idea_prompt || "");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["allAdminSettings"] });
@@ -148,7 +123,7 @@ const AdminSettingsPage: React.FC = () => {
                   <FormItem>
                     <FormLabel>Chave PIX</FormLabel>
                     <FormControl>
-                      <Input placeholder="Sua chave PIX (CPF, CNPJ, email, etc.)" {...field} value={field.value || ''} />
+                      <Input placeholder="Sua chave PIX (CPF, CNPJ, email, etc.)" {...field} />
                     </FormControl>
                     <FormDescription>
                       Esta chave será exibida na página de doação.
@@ -194,74 +169,24 @@ const AdminSettingsPage: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BrainCircuit className="h-6 w-6 text-purple-600" />
-                Configurações do Gemini
+                Configurações do Gemini (Tutor de Arte)
               </CardTitle>
               <CardDescription>
-                Defina os modelos e a personalidade dos assistentes de IA.
+                Defina o modelo e a personalidade do seu assistente de IA para o chat.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <FormField
                 control={form.control}
-                name="available_gemini_models"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Modelos Gemini Disponíveis</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="gemini-1.5-pro,gemini-1.5-flash,gemini-pro,gemini-pro-vision"
-                        {...field}
-                        value={field.value || ''}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Liste os modelos que os usuários podem escolher, separados por vírgula.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
                 name="gemini_model_name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Modelo Padrão (Tutor de Arte)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ''}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione um modelo" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {availableModels.map(model => <SelectItem key={model} value={model}>{model}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <FormLabel>Nome do Modelo Gemini</FormLabel>
+                    <FormControl>
+                      <Input placeholder="ex: gemini-pro" {...field} />
+                    </FormControl>
                     <FormDescription>
-                      Este será o modelo padrão para o chat do Tutor de Arte (texto).
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="gemini_image_model_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Modelo de Imagem (Gerador de Ideias)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ''}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione um modelo" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {availableModels.map(model => <SelectItem key={model} value={model}>{model}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      Este modelo será usado para gerar as imagens. Recomenda-se 'gemini-1.5-pro'.
+                      Modelos recomendados: <code>gemini-pro</code>, <code>gemini-1.5-flash</code>, ou <code>gemini-pro-vision</code>.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -312,7 +237,6 @@ const AdminSettingsPage: React.FC = () => {
                         placeholder="Ex: Crie um prompt detalhado para um gerador de imagens de IA como Midjourney ou DALL-E, em inglês para melhor compatibilidade, com base nas seguintes características..."
                         className="min-h-[150px]"
                         {...field}
-                        value={field.value || ''}
                       />
                     </FormControl>
                     <FormDescription>
