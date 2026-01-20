@@ -227,7 +227,7 @@ const AdminSettingsPage: React.FC = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Modelo Padrão (Tutor de Arte)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value || ''}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione um modelo" />
@@ -250,7 +250,7 @@ const AdminSettingsPage: React.FC = () => {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Modelo de Imagem (Gerador de Ideias)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value || ''}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Selecione um modelo" />
@@ -261,7 +261,7 @@ const AdminSettingsPage: React.FC = () => {
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      Este modelo será usado para gerar as imagens. Recomenda-se 'gemini-1.5-pro'. 'gemini-pro-vision' é para analisar imagens, não gerar.
+                      Este modelo será usado para gerar as imagens. Recomenda-se 'gemini-1.5-pro'.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

@@ -102,26 +102,28 @@ const ImageIdeaGeneratorPage: React.FC = () => {
   const generateMutation = useMutation({
     mutationFn: async (values: IdeaFormValues) => {
       const generatePrompt = (data: IdeaFormValues): string => {
-        const systemPart = ideaSystemPrompt || "Crie uma descrição visual criativa para uma pintura em tela, baseada nas seguintes especificações. A descrição deve ser rica e sensorial, pensada como inspiração para um artista pintor.";
+        // This prompt is now designed to instruct an image generation model directly.
+        const systemPart = ideaSystemPrompt || "Generate a high-quality, detailed image based on the following description. The prompt should be interpreted for direct image creation. Prioritize visual elements over narrative. Use English for best compatibility with image models.";
 
         const details = [
-          `**Tema Principal:** ${data.descricao_principal}`,
-          data.tema && `**Categoria:** ${data.tema}`,
-          data.estilo_artistico && `**Estilo:** ${data.estilo_artistico}`,
-          data.referencia_artistica && `**Inspirado por:** ${data.referencia_artistica}`,
-          data.paleta_cores && `**Paleta de Cores:** ${data.paleta_cores}`,
-          data.iluminacao && `**Iluminação:** ${data.iluminacao}`,
-          data.atmosfera && `**Atmosfera:** ${data.atmosfera}`,
-          data.ambiente && `**Ambiente:** ${data.ambiente}`,
-          data.possui_personagens && `**Personagens:** ${data.descricao_personagens || 'Presentes, conforme a imaginação do artista'}`,
-          data.enquadramento && `**Enquadramento:** ${data.enquadramento}`,
-          data.nivel_detalhe && `**Nível de Detalhe:** ${data.nivel_detalhe}`,
-          data.texturas_materiais && `**Texturas e Materiais:** ${data.texturas_materiais}`,
-          data.qualidade_render && `**Qualidade Visual:** ${data.qualidade_render}`,
-          data.finalidade && `**Finalidade:** ${data.finalidade}`,
-        ].filter(Boolean).join('\n');
+          `Primary subject: ${data.descricao_principal}`,
+          data.tema && `Theme: ${data.tema}`,
+          data.estilo_artistico && `Artistic style: ${data.estilo_artistico}`,
+          data.referencia_artistica && `Inspired by the art of: ${data.referencia_artistica}`,
+          data.paleta_cores && `Color palette: ${data.paleta_cores}`,
+          data.iluminacao && `Lighting: ${data.iluminacao}`,
+          data.atmosfera && `Atmosphere: ${data.atmosfera}`,
+          data.ambiente && `Setting/Environment: ${data.ambiente}`,
+          data.possui_personagens && `Characters: ${data.descricao_personagens || 'Characters are present'}`,
+          data.enquadramento && `Framing: ${data.enquadramento}`,
+          data.nivel_detalhe && `Level of detail: ${data.nivel_detalhe}`,
+          data.texturas_materiais && `Textures and materials: ${data.texturas_materiais}`,
+          data.qualidade_render && `Render quality: ${data.qualidade_render}`,
+          data.formato_imagem && `Aspect ratio: ${data.formato_imagem}`,
+          data.prompt_negativo && `Negative prompt: ${data.prompt_negativo}`,
+        ].filter(Boolean).join(', ');
 
-        return `${systemPart}\n\n${details}`;
+        return `${systemPart}\n\nPROMPT: ${details}`;
       };
 
       const prompt_final = generatePrompt(values);
