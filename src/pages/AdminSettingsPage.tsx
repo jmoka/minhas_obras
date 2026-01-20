@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -66,8 +66,6 @@ const AdminSettingsPage: React.FC = () => {
     },
   });
 
-  const availableModels = form.watch('available_gemini_models')?.split(',').map(m => m.trim()).filter(Boolean) || [];
-
   useEffect(() => {
     if (settings) {
       form.reset({
@@ -81,6 +79,22 @@ const AdminSettingsPage: React.FC = () => {
       });
     }
   }, [settings, form]);
+
+  const formValues = form.watch();
+
+  const availableModels = useMemo(() => {
+    const baseModels = formValues.available_gemini_models?.split(',').map(m => m.trim()).filter(Boolean) || [];
+    const modelSet = new Set(baseModels);
+
+    if (formValues.gemini_model_name) {
+      modelSet.add(formValues.gemini_model_name);
+    }
+    if (formValues.gemini_image_model_name) {
+      modelSet.add(formValues.gemini_image_model_name);
+    }
+
+    return Array.from(modelSet).filter(Boolean);
+  }, [formValues.available_gemini_models, formValues.gemini_model_name, formValues.gemini_image_model_name]);
 
   const mutation = useMutation({
     mutationFn: async (values: SettingsFormValues) => {
