@@ -87,7 +87,7 @@ const AdminUserManagement: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto space-y-12">
+    <div className="space-y-12">
       <div className="max-w-xl mx-auto">
         <Card className="border-none shadow-lg bg-white/90 backdrop-blur-sm">
           <CardHeader>

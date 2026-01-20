@@ -22,7 +22,7 @@ const AdminAnalytics: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <div className="space-y-6">
         <Skeleton className="h-12 w-64" />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[1, 2, 3, 4].map(i => (
@@ -34,7 +34,7 @@ const AdminAnalytics: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-8">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="text-4xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-700 via-yellow-500 to-amber-600">
           Analytics Dashboard

@@ -60,7 +60,7 @@ const ObraDetail: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="space-y-6">
         <Skeleton className="h-10 w-3/4" />
         <div className="grid md:grid-cols-3 gap-8">
           <Skeleton className="md:col-span-2 h-[500px]" />
@@ -107,7 +107,7 @@ const ObraDetail: React.FC = () => {
   const emailBody = encodeURIComponent(`Olá!\n\nGostaria de saber mais sobre a obra "${obra.titulo}" que está em sua coleção.\n\nVeja a obra: ${obraUrl}\n\nAguardo retorno.`);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 p-4 md:p-8 bg-[#fcfbf9] min-h-screen text-stone-800">
+    <div className="space-y-8 text-stone-800">
       <h1 className="text-2xl md:text-4xl font-serif font-bold border-b-4 border-amber-400/30 pb-4 text-transparent bg-clip-text bg-gradient-to-r from-teal-700 via-yellow-500 to-amber-600">{obra.titulo}</h1>
 
       <div className="grid md:grid-cols-3 gap-8">

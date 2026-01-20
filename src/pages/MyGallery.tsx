@@ -34,7 +34,7 @@ const MyGallery: React.FC = () => {
 
   if (isLoading || isAuthLoading) {
     return (
-      <div className="min-h-screen bg-[#fcfbf9] p-4 md:p-8 space-y-8">
+      <div className="space-y-8">
         <div className="flex items-center gap-4 mb-6 border-b-4 border-amber-400/30 pb-6">
           <Skeleton className="h-10 w-64" />
         </div>
@@ -53,7 +53,7 @@ const MyGallery: React.FC = () => {
   
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[#fcfbf9] p-4 md:p-8 text-center flex flex-col items-center justify-center">
+      <div className="text-center flex flex-col items-center justify-center py-16">
         <img src="/logo.png" alt="Logo" className="h-20 w-auto mb-6" />
         <h1 className="text-3xl font-serif mb-4 text-teal-800">Acesso Restrito</h1>
         <p className="text-lg text-muted-foreground max-w-md">Você precisa estar logado para ver suas obras. Faça login ou crie uma conta.</p>
@@ -66,7 +66,7 @@ const MyGallery: React.FC = () => {
 
   if (!obras || obras.length === 0) {
     return (
-      <div className="min-h-screen bg-[#fcfbf9] p-4 md:p-8 text-center flex flex-col items-center justify-center">
+      <div className="text-center flex flex-col items-center justify-center py-16">
         <img src="/logo.png" alt="Logo" className="h-20 w-auto mb-6" />
         <h1 className="text-3xl font-serif mb-4 text-teal-800">Sua Galeria Pessoal está Vazia</h1>
         <p className="text-lg text-muted-foreground max-w-md">Você ainda não adicionou nenhuma obra. Clique no botão abaixo para começar a construir sua coleção.</p>
@@ -78,7 +78,7 @@ const MyGallery: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#fcfbf9] p-4 md:p-8 space-y-8">
+    <div className="space-y-8">
       <div className="flex flex-col md:flex-row items-center gap-4 border-b-4 border-amber-400/30 pb-6">
         <h1 className="text-3xl md:text-5xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-700 via-yellow-500 to-amber-600">
           Minhas Obras

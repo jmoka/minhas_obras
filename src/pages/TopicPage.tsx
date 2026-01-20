@@ -116,7 +116,7 @@ const TopicPage: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-10rem)] max-w-4xl mx-auto">
+    <div className="flex flex-col h-[calc(100vh-15rem)]">
       <div className="p-4 border-b">
         <h1 className="text-2xl font-bold">{topic.title}</h1>
         <p className="text-sm text-muted-foreground">{topic.description}</p>

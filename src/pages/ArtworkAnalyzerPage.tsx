@@ -149,7 +149,7 @@ const ArtworkAnalyzerPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-12">
+    <div className="space-y-12">
       <div className="text-center">
         <h1 className="text-4xl md:text-6xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-teal-700 via-yellow-500 to-amber-600">
           Analisador de Obras com IA

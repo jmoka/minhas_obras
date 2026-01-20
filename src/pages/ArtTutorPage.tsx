@@ -290,7 +290,7 @@ const ArtTutorPage: React.FC = () => {
   }
 
   return (
-    <ResizablePanelGroup direction="horizontal" className="h-[calc(100vh-10rem)] max-w-7xl mx-auto border rounded-lg">
+    <ResizablePanelGroup direction="horizontal" className="h-[calc(100vh-10rem)] border rounded-lg">
       <ResizablePanel defaultSize={25} minSize={20} maxSize={30}>
         <SessionsList
           sessions={sessions}

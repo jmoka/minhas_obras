@@ -41,7 +41,7 @@ const DonationPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-12">
+    <div className="space-y-12">
       <div className="text-center">
         <Heart className="h-16 w-16 mx-auto text-pink-500 mb-4 animate-pulse" />
         <h1 className="text-4xl md:text-6xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-600 via-orange-500 to-yellow-400">

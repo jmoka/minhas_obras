@@ -77,7 +77,7 @@ const WelcomePage: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-16 max-w-2xl">
+    <div className="py-16 max-w-2xl mx-auto">
       <div className="text-center mb-8 animate-fade-in">
         <Sparkles className="h-16 w-16 mx-auto text-yellow-500 mb-4 animate-pulse" />
         <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">

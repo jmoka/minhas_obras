@@ -32,7 +32,7 @@ const ArtistProfilePage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="max-w-3xl mx-auto space-y-4">
+      <div className="space-y-4">
         <Skeleton className="h-10 w-64" />
         <div className="flex items-center space-x-4">
           <Skeleton className="h-24 w-24 rounded-full" />
@@ -53,7 +53,7 @@ const ArtistProfilePage: React.FC = () => {
   // If no profile exists, force editing mode (creation mode)
   if (!profile && !isEditing) {
     return (
-      <div className="max-w-3xl mx-auto">
+      <div>
         <Card>
           <CardHeader>
             <CardTitle className="text-3xl font-serif">Cadastrar Perfil de Artista</CardTitle>
@@ -69,7 +69,7 @@ const ArtistProfilePage: React.FC = () => {
 
   if (isEditing) {
     return (
-      <div className="max-w-3xl mx-auto">
+      <div>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-3xl font-serif">Editar Perfil</CardTitle>
@@ -89,7 +89,7 @@ const ArtistProfilePage: React.FC = () => {
   const avatarUrl = profile?.foto ? getPublicUrl(profile.foto) : "/placeholder.svg";
 
   return (
-    <div className="max-w-3xl mx-auto">
+    <div>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-3xl font-serif">{profile?.nome || "Artista Desconhecido"}</CardTitle>

@@ -86,7 +86,7 @@ const ApiSettingsPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="max-w-2xl mx-auto">
+      <div className="space-y-4">
         <Skeleton className="h-12 w-1/2 mb-4" />
         <Skeleton className="h-64 w-full" />
       </div>
@@ -94,7 +94,7 @@ const ApiSettingsPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8">
+    <div className="space-y-8">
       <h1 className="text-3xl font-bold">Configurações de API</h1>
 
       <Card>

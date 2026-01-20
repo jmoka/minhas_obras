@@ -191,7 +191,7 @@ const ImageIdeaGeneratorPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
+    <div className="space-y-8">
       <div className="text-center">
         <h1 className="text-4xl md:text-5xl font-serif font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400">
           Gerador de Ideias de Arte
