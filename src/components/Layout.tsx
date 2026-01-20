@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Palette, User, Plus, Users, LogIn, LogOut, Menu, X, Home, AlertCircle, MessageSquare, Sparkles, Settings, Key, BrainCircuit, Lightbulb } from "lucide-react";
+import { Palette, User, Plus, Users, LogIn, LogOut, Menu, X, Home, AlertCircle, MessageSquare, Sparkles, Settings, Key, BrainCircuit, Lightbulb, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,12 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchArtistProfile } from "@/integrations/supabase/api";
 import { getBlockedMessage } from "@/utils/blockedUserMessages";
 import { showError } from "@/utils/toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -123,42 +129,59 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <NavItem to="/" icon={<Home className="h-5 w-5" />} label="Início" />
             {isAuthenticated && (
               <>
-                <NavItem 
-                  to="/idea-generator" 
-                  icon={<Lightbulb className="h-5 w-5" />} 
-                  label="Gerador de Ideias"
-                  onClick={(e) => {
-                    if (profile?.bloc) {
-                      e.preventDefault();
-                      showError('💡 Para usar o gerador de ideias, sua conta precisa ser aprovada.');
-                      navigate('/welcome');
-                    }
-                  }}
-                />
-                <NavItem 
-                  to="/tutor" 
-                  icon={<BrainCircuit className="h-5 w-5" />} 
-                  label="Tutor IA"
-                  onClick={(e) => {
-                    if (profile?.bloc) {
-                      e.preventDefault();
-                      showError('🧠 Para usar o tutor, sua conta precisa ser aprovada.');
-                      navigate('/welcome');
-                    }
-                  }}
-                />
-                <NavItem 
-                  to="/analyzer" 
-                  icon={<Sparkles className="h-5 w-5" />} 
-                  label="Analisador IA"
-                  onClick={(e) => {
-                    if (profile?.bloc) {
-                      e.preventDefault();
-                      showError('✨ Para usar o analisador, sua conta precisa ser aprovada.');
-                      navigate('/welcome');
-                    }
-                  }}
-                />
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="flex items-center">
+                      AI
+                      <ChevronDown className="h-4 w-4 ml-1" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem asChild>
+                      <Link to="/idea-generator" onClick={(e) => {
+                        if (profile?.bloc) {
+                          e.preventDefault();
+                          showError('💡 Para usar o gerador de ideias, sua conta precisa ser aprovada.');
+                          navigate('/welcome');
+                        }
+                      }}>
+                        <Lightbulb className="mr-2 h-4 w-4" />
+                        <span>Gerador de Ideias</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/tutor" onClick={(e) => {
+                        if (profile?.bloc) {
+                          e.preventDefault();
+                          showError('🧠 Para usar o tutor, sua conta precisa ser aprovada.');
+                          navigate('/welcome');
+                        }
+                      }}>
+                        <BrainCircuit className="mr-2 h-4 w-4" />
+                        <span>Tutor IA</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/analyzer" onClick={(e) => {
+                        if (profile?.bloc) {
+                          e.preventDefault();
+                          showError('✨ Para usar o analisador, sua conta precisa ser aprovada.');
+                          navigate('/welcome');
+                        }
+                      }}>
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        <span>Analisador IA</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/settings/api">
+                        <Key className="mr-2 h-4 w-4" />
+                        <span>API Key</span>
+                      </Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
                 <NavItem 
                   to="/forum" 
                   icon={<MessageSquare className="h-5 w-5" />} 
@@ -213,7 +236,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     <NavItem to="/admin/settings" icon={<Settings className="h-5 w-5" />} label="Configurações" />
                   </>
                 )}
-                 <NavItem to="/settings/api" icon={<Key className="h-5 w-5" />} label="API Key" />
                 <Button variant="ghost" size="sm" onClick={handleLogout}>
                   <LogOut className="h-5 w-5 mr-2" />
                   <span>Sair</span>
