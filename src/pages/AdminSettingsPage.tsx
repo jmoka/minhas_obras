@@ -61,8 +61,8 @@ const AdminSettingsPage: React.FC = () => {
       admin_whatsapp: "",
       pix_key: "",
       gemini_idea_prompt: "",
-      available_gemini_models: "gemini-1.5-flash,gemini-pro,gemini-pro-vision",
-      gemini_image_model_name: "gemini-pro-vision",
+      available_gemini_models: "gemini-1.5-pro,gemini-1.5-flash,gemini-pro,gemini-pro-vision",
+      gemini_image_model_name: "gemini-1.5-pro",
     },
   });
 
@@ -70,12 +70,12 @@ const AdminSettingsPage: React.FC = () => {
     if (settings) {
       form.reset({
         gemini_tutor_prompt: settings.gemini_tutor_prompt || "",
-        gemini_model_name: settings.gemini_model_name || "",
+        gemini_model_name: settings.gemini_model_name || "gemini-1.5-flash",
         admin_whatsapp: settings.admin_whatsapp || "",
         pix_key: settings.pix_key || "",
         gemini_idea_prompt: settings.gemini_idea_prompt || "",
-        available_gemini_models: settings.available_gemini_models || "gemini-1.5-flash,gemini-pro,gemini-pro-vision",
-        gemini_image_model_name: settings.gemini_image_model_name || "gemini-pro-vision",
+        available_gemini_models: settings.available_gemini_models || "gemini-1.5-pro,gemini-1.5-flash,gemini-pro,gemini-pro-vision",
+        gemini_image_model_name: settings.gemini_image_model_name || "gemini-1.5-pro",
       });
     }
   }, [settings, form]);
@@ -209,7 +209,7 @@ const AdminSettingsPage: React.FC = () => {
                     <FormLabel>Modelos Gemini Disponíveis</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="gemini-1.5-flash,gemini-pro,gemini-pro-vision"
+                        placeholder="gemini-1.5-pro,gemini-1.5-flash,gemini-pro,gemini-pro-vision"
                         {...field}
                         value={field.value || ''}
                       />
@@ -238,7 +238,7 @@ const AdminSettingsPage: React.FC = () => {
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      Este será o modelo padrão para o chat do Tutor de Arte.
+                      Este será o modelo padrão para o chat do Tutor de Arte (texto).
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -261,7 +261,7 @@ const AdminSettingsPage: React.FC = () => {
                       </SelectContent>
                     </Select>
                     <FormDescription>
-                      Este modelo será usado para gerar as imagens. Recomenda-se 'gemini-pro-vision'.
+                      Este modelo será usado para gerar as imagens. Recomenda-se 'gemini-1.5-pro'. 'gemini-pro-vision' é para analisar imagens, não gerar.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

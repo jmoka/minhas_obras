@@ -49,12 +49,10 @@ serve(async (req) => {
       .from('settings').select('value').eq('key', 'gemini_image_model_name').single();
     
     const apiKey = apiKeyData.api_key;
-    let modelToUse = modelData?.value;
+    const modelToUse = modelData?.value;
 
-    // Mecanismo de fallback robusto: se o modelo não estiver especificado, estiver vazio ou for um modelo problemático conhecido, usa um padrão seguro.
     if (!modelToUse) {
-      console.warn(`[${functionName}] Modelo de imagem não configurado. Usando fallback 'gemini-pro' para diagnóstico.`);
-      modelToUse = 'gemini-pro';
+      throw new Error("O modelo de geração de imagem não está configurado pelo administrador.");
     }
 
     // 4. Interagir com a API do Gemini para gerar a imagem
@@ -100,13 +98,11 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    // Log aprimorado para depuração
     console.error(`[${functionName}] Erro:`, error.message);
     console.error(`[${functionName}] Objeto de erro completo:`, JSON.stringify(error, null, 2));
 
     const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro inesperado.";
 
-    // Erro específico para problemas de cota
     if (error.status === 429 || (errorMessage.includes("429") && errorMessage.includes("quota"))) {
       return new Response(JSON.stringify({ 
         error: "A cota da API do Google Gemini foi excedida. Verifique seu plano no Google AI Studio ou tente novamente mais tarde." 
@@ -116,7 +112,6 @@ serve(async (req) => {
       });
     }
 
-    // Erro genérico
     return new Response(JSON.stringify({ error: errorMessage }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 });
   }
 });
