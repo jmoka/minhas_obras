@@ -14,9 +14,9 @@ serve(async (req) => {
   }
 
   try {
-    const { apiKey } = await req.json();
-    if (!apiKey) {
-      throw new Error("A chave de API (apiKey) é obrigatória.");
+    const { geminiApiKey, pexelsApiKey } = await req.json();
+    if (!geminiApiKey && !pexelsApiKey) {
+      throw new Error("Pelo menos uma chave de API (geminiApiKey ou pexelsApiKey) é obrigatória.");
     }
 
     const authHeader = req.headers.get("Authorization");
@@ -41,20 +41,27 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Upsert the API key in plain text
+    const upsertData: { user_id: string; api_key?: string; pexels_api_key?: string } = {
+      user_id: user.id,
+    };
+
+    if (geminiApiKey) {
+      upsertData.api_key = geminiApiKey;
+    }
+    if (pexelsApiKey) {
+      upsertData.pexels_api_key = pexelsApiKey;
+    }
+
     const { error: upsertError } = await supabaseAdmin
       .from('user_api_keys')
-      .upsert({
-        user_id: user.id,
-        api_key: apiKey
-      }, { onConflict: 'user_id' });
+      .upsert(upsertData, { onConflict: 'user_id' });
 
     if (upsertError) {
       console.error(`[${functionName}] Erro ao salvar chave:`, upsertError);
       throw new Error(`Não foi possível salvar a chave de API: ${upsertError.message}`);
     }
 
-    return new Response(JSON.stringify({ message: "Chave de API salva com sucesso." }), {
+    return new Response(JSON.stringify({ message: "Chave(s) de API salva(s) com sucesso." }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });

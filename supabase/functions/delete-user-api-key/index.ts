@@ -14,6 +14,11 @@ serve(async (req) => {
   }
 
   try {
+    const { keyType } = await req.json();
+    if (!keyType || (keyType !== 'gemini' && keyType !== 'pexels')) {
+      throw new Error("O tipo da chave ('gemini' ou 'pexels') é obrigatório.");
+    }
+
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       throw new Error("Usuário não autenticado.");
@@ -36,14 +41,21 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { error: deleteError } = await supabaseAdmin
+    const updatePayload: { [key: string]: null } = {};
+    if (keyType === 'gemini') {
+      updatePayload.api_key = null;
+    } else if (keyType === 'pexels') {
+      updatePayload.pexels_api_key = null;
+    }
+
+    const { error: updateError } = await supabaseAdmin
       .from('user_api_keys')
-      .delete()
+      .update(updatePayload)
       .eq('user_id', user.id);
 
-    if (deleteError) {
-      console.error(`[${functionName}] Erro ao deletar chave:`, deleteError);
-      throw new Error(`Não foi possível deletar a chave de API: ${deleteError.message}`);
+    if (updateError) {
+      console.error(`[${functionName}] Erro ao deletar chave:`, updateError);
+      throw new Error(`Não foi possível deletar a chave de API: ${updateError.message}`);
     }
 
     return new Response(JSON.stringify({ message: "Chave de API deletada com sucesso." }), {

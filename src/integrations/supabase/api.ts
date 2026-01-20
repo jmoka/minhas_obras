@@ -716,12 +716,12 @@ export const setSetting = async (key: string, value: string): Promise<void> => {
 };
 
 // User API Key Functions
-export const saveUserApiKey = async (apiKey: string) => {
+export const saveUserApiKeys = async (keys: { geminiApiKey?: string; pexelsApiKey?: string }) => {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error("Usuário não autenticado.");
 
   const { data, error } = await supabase.functions.invoke("save-user-api-key", {
-    body: { apiKey },
+    body: keys,
     headers: {
       'Authorization': `Bearer ${session.access_token}`,
     },
@@ -732,25 +732,29 @@ export const saveUserApiKey = async (apiKey: string) => {
   return data;
 };
 
-export const getUserApiKey = async (): Promise<{ apiKey: string | null }> => {
+export const getUserApiKeys = async (): Promise<{ geminiApiKey: string | null; pexelsApiKey: string | null }> => {
   const { data, error } = await supabase
     .from("user_api_keys")
-    .select("api_key")
+    .select("api_key, pexels_api_key")
     .single();
 
   if (error && error.code !== 'PGRST116') { // Ignore "no rows found" error
-    console.error("Error fetching API key:", error);
-    throw new Error("Não foi possível buscar a chave de API.");
+    console.error("Error fetching API keys:", error);
+    throw new Error("Não foi possível buscar as chaves de API.");
   }
 
-  return { apiKey: data?.api_key || null };
+  return { 
+    geminiApiKey: data?.api_key || null,
+    pexelsApiKey: data?.pexels_api_key || null,
+  };
 };
 
-export const deleteUserApiKey = async () => {
+export const deleteUserApiKey = async (keyType: 'gemini' | 'pexels') => {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error("Usuário não autenticado.");
 
   const { data, error } = await supabase.functions.invoke("delete-user-api-key", {
+    body: { keyType },
     headers: {
       'Authorization': `Bearer ${session.access_token}`,
     },
@@ -761,18 +765,21 @@ export const deleteUserApiKey = async () => {
   return data;
 };
 
-export const getUserApiKeyStatus = async (): Promise<{ isSet: boolean }> => {
+export const getUserApiKeysStatus = async (): Promise<{ isGeminiSet: boolean; isPexelsSet: boolean }> => {
   const { data, error } = await supabase
     .from("user_api_keys")
-    .select("api_key")
+    .select("api_key, pexels_api_key")
     .single();
 
   if (error && error.code !== 'PGRST116') { // Ignore "no rows found"
     console.error("Error checking API key status:", error);
-    return { isSet: false };
+    return { isGeminiSet: false, isPexelsSet: false };
   }
 
-  return { isSet: !!data?.api_key };
+  return { 
+    isGeminiSet: !!data?.api_key,
+    isPexelsSet: !!data?.pexels_api_key,
+  };
 };
 
 // Art Tutor Chat Functions
