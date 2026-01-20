@@ -1,5 +1,5 @@
 # Minhas Artes - Galeria de Arte
-VERSÃO 2.0 LTS.
+VERSÃO 2.0 LTS
 
 ## Sistema de galeria de arte com cadastro de usuários, obras, galerias de imagens e funcionalidades de IA com Google Gemini.
 
