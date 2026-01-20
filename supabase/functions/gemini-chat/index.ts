@@ -73,8 +73,6 @@ serve(async (req) => {
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({ model: modelName });
 
-    // Prepend system prompt to history if it's a new chat
-    // This is a more compatible way to provide system instructions
     const chatHistory = [...history];
     if (chatHistory.length === 0) {
         chatHistory.unshift({
@@ -102,7 +100,6 @@ serve(async (req) => {
       currentSessionId = newSession.id;
     }
 
-    // Don't save the prepended system prompt to the DB
     const messagesToInsert = [
       { session_id: currentSessionId, role: 'user', content: message },
       { session_id: currentSessionId, role: 'model', content: modelResponseText },
@@ -122,16 +119,26 @@ serve(async (req) => {
 
   } catch (error) {
     console.error(`[${functionName}] Erro Detalhado:`, JSON.stringify(error, null, 2));
-    let errorMessage = error.message;
-    // Provide more helpful error messages to the user
-    if (errorMessage.includes("API key not valid")) {
+    
+    let errorMessage = error.message || "Ocorreu um erro desconhecido.";
+    let statusCode = 500;
+
+    const errorString = JSON.stringify(error).toLowerCase();
+
+    if (errorString.includes("429") || errorString.includes("too many requests")) {
+      errorMessage = "Você atingiu o limite de requisições da API do Gemini (plano gratuito). Por favor, aguarde um minuto e tente novamente.";
+      statusCode = 429;
+    } else if (errorMessage.includes("API key not valid")) {
       errorMessage = "Sua chave de API do Gemini não é válida. Verifique-a em 'Configurações de API'.";
+      statusCode = 401;
     } else if (errorMessage.includes("billing")) {
       errorMessage = "Erro de faturamento com a API do Gemini. Verifique sua conta Google Cloud.";
+      statusCode = 402;
     }
+
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
+      status: statusCode,
     });
   }
 });
