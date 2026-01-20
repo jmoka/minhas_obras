@@ -865,3 +865,19 @@ export const deleteImageIdea = async (ideaId: string) => {
 
   if (error) throw new Error(`Erro ao deletar ideia: ${error.message}`);
 };
+
+export const findReferenceImage = async (query: string): Promise<{ imageUrl: string }> => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error("Usuário não autenticado.");
+
+  const { data, error } = await supabase.functions.invoke("find-reference-image", {
+    body: { query },
+    headers: {
+      'Authorization': `Bearer ${session.access_token}`,
+    },
+  });
+
+  if (error) throw error;
+  if (data.error) throw new Error(data.error);
+  return data;
+};

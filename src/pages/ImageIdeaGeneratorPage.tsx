@@ -3,7 +3,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createImageIdea, updateImageIdea, fetchImageIdeas, deleteImageIdea, getSetting } from "@/integrations/supabase/api";
+import { createImageIdea, updateImageIdea, fetchImageIdeas, deleteImageIdea, getSetting, findReferenceImage } from "@/integrations/supabase/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -80,6 +80,7 @@ const ImageIdeaGeneratorPage: React.FC = () => {
 
   const generateMutation = useMutation({
     mutationFn: async (values: IdeaFormValues) => {
+      // Step 1: Generate the text prompt
       const generatePrompt = (data: IdeaFormValues): string => {
         const systemPart = ideaSystemPrompt || "Crie um prompt de imagem detalhado para um gerador de IA como Midjourney ou DALL-E, baseado nas seguintes especificações. O prompt deve ser em inglês para melhor compatibilidade, mas use as palavras-chave fornecidas.";
 
@@ -111,29 +112,43 @@ const ImageIdeaGeneratorPage: React.FC = () => {
 
         return `${systemPart}\n\n--- PROMPT DO USUÁRIO ---\n${userPrompt}${negativePrompt}`;
       };
-
       const prompt_final = generatePrompt(values);
-      const initialIdea = await createImageIdea({ ...values, prompt_final });
 
-      // SIMULAÇÃO DA CHAMADA À IA
-      await new Promise(resolve => setTimeout(resolve, 3000)); 
-      const placeholderUrl = `https://picsum.photos/seed/${initialIdea.id}/1024`;
+      // Step 2: Save the initial idea to get an ID and set status to PENDING
+      const initialIdea = await createImageIdea({ 
+        ...values, 
+        prompt_final,
+        status: 'PENDING',
+      });
 
+      // Step 3: Create a search query for the reference image
+      const searchQuery = [
+        values.descricao_principal,
+        values.tema,
+        values.estilo_artistico,
+        values.ambiente,
+        values.atmosfera,
+      ].filter(Boolean).join(' ');
+
+      // Step 4: Call the edge function to find a reference image
+      const { imageUrl } = await findReferenceImage(searchQuery);
+
+      // Step 5: Update the idea with the image URL and set status to GERADO
       const updatedIdea = await updateImageIdea(initialIdea.id, {
-        imagem_url: placeholderUrl,
+        imagem_url: imageUrl,
         status: 'GERADO',
       });
 
       return updatedIdea;
     },
     onSuccess: (data) => {
-      showSuccess("Imagem gerada com sucesso!");
+      showSuccess("Ideia e imagem de referência geradas com sucesso!");
       setActiveIdea(data);
       queryClient.invalidateQueries({ queryKey: ["imageIdeas"] });
       form.reset();
     },
     onError: (error) => {
-      showError(`Erro ao gerar imagem: ${error.message}`);
+      showError(`Erro ao gerar ideia: ${error.message}`);
     },
   });
 
@@ -156,6 +171,7 @@ const ImageIdeaGeneratorPage: React.FC = () => {
   const handleDownload = async () => {
     if (!activeIdea?.imagem_url) return;
     try {
+      // Pexels URLs often need to be fetched via a proxy or directly if CORS allows
       const response = await fetch(activeIdea.imagem_url);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -168,7 +184,7 @@ const ImageIdeaGeneratorPage: React.FC = () => {
       window.URL.revokeObjectURL(url);
       showSuccess("Download iniciado!");
     } catch (error) {
-      showError("Não foi possível baixar a imagem.");
+      showError("Não foi possível baixar a imagem. Tente abrir em nova aba e salvar.");
       console.error(error);
     }
   };
@@ -259,7 +275,7 @@ const ImageIdeaGeneratorPage: React.FC = () => {
               {generateMutation.isPending ? (
                 <div className="flex flex-col items-center justify-center h-64 bg-muted rounded-lg">
                   <Sparkles className="h-8 w-8 text-muted-foreground animate-pulse" />
-                  <p className="mt-2 text-muted-foreground">Gerando sua obra de arte...</p>
+                  <p className="mt-2 text-muted-foreground">Buscando referência visual...</p>
                 </div>
               ) : activeIdea?.imagem_url ? (
                 <div className="space-y-4">
@@ -304,7 +320,7 @@ const ImageIdeaGeneratorPage: React.FC = () => {
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-64 bg-muted rounded-lg">
-                  <p className="text-muted-foreground">A imagem gerada aparecerá aqui.</p>
+                  <p className="text-muted-foreground">A imagem de referência aparecerá aqui.</p>
                 </div>
               )}
             </CardContent>
