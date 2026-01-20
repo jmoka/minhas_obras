@@ -83,28 +83,33 @@ const ImageIdeaGeneratorPage: React.FC = () => {
       const generatePrompt = (data: IdeaFormValues): string => {
         const systemPart = ideaSystemPrompt || "Crie um prompt de imagem detalhado para um gerador de IA como Midjourney ou DALL-E, baseado nas seguintes especificações. O prompt deve ser em inglês para melhor compatibilidade, mas use as palavras-chave fornecidas.";
 
-        const details = [
+        const promptParts = [
           data.descricao_principal,
-          data.tema && `tema: ${data.tema}`,
-          data.estilo_artistico && `estilo: ${data.estilo_artistico}`,
-          data.referencia_artistica && `inspirado por: ${data.referencia_artistica}`,
-          data.paleta_cores && `cores: ${data.paleta_cores}`,
-          data.iluminacao && `iluminação: ${data.iluminacao}`,
-          data.atmosfera && `atmosfera: ${data.atmosfera}`,
-          data.ambiente && `ambiente: ${data.ambiente}`,
-          data.possui_personagens && `personagens: ${data.descricao_personagens || 'presentes'}`,
-          data.enquadramento && `enquadramento: ${data.enquadramento}`,
-          data.nivel_detalhe && `detalhes: ${data.nivel_detalhe}`,
-          data.texturas_materiais && `texturas: ${data.texturas_materiais}`,
-          data.qualidade_render && `qualidade: ${data.qualidade_render}`,
+          data.tema && `O tema é ${data.tema}.`,
+          data.estilo_artistico && `O estilo artístico é ${data.estilo_artistico}.`,
+          data.referencia_artistica && `Inspirado por ${data.referencia_artistica}.`,
+          data.paleta_cores && `A paleta de cores deve ser ${data.paleta_cores}.`,
+          data.iluminacao && `A iluminação é ${data.iluminacao}.`,
+          data.atmosfera && `A atmosfera é ${data.atmosfera}.`,
+          data.ambiente && `O ambiente é uma ${data.ambiente}.`,
+          data.possui_personagens && `A cena contém personagens: ${data.descricao_personagens || 'descrição não fornecida'}.`,
+          data.enquadramento && `O enquadramento é ${data.enquadramento}.`,
+          data.nivel_detalhe && `O nível de detalhe é ${data.nivel_detalhe}.`,
+          data.texturas_materiais && `Incluir texturas de ${data.texturas_materiais}.`,
+          data.qualidade_render && `A qualidade da imagem deve ser ${data.qualidade_render}.`,
+          data.finalidade && `A finalidade da imagem é para ${data.finalidade}.`,
+        ].filter(Boolean).join(' ');
+
+        const technicalDetails = [
           data.formato_imagem && `--ar ${data.formato_imagem.replace(':', ' ')}`,
-          data.resolucao && `resolução: ${data.resolucao}`,
-          data.finalidade && `finalidade: ${data.finalidade}`,
-        ].filter(Boolean).join(', ');
+          data.resolucao && `--res ${data.resolucao}`,
+        ].filter(Boolean).join(' ');
 
         const negativePrompt = data.prompt_negativo ? ` --no ${data.prompt_negativo}` : '';
 
-        return `${systemPart}\n\n${details}${negativePrompt}`;
+        const userPrompt = `${promptParts} ${technicalDetails}`.trim();
+
+        return `${systemPart}\n\n--- PROMPT DO USUÁRIO ---\n${userPrompt}${negativePrompt}`;
       };
 
       const prompt_final = generatePrompt(values);
