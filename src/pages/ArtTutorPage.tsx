@@ -10,7 +10,7 @@ import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
-import { Plus, MessageSquare, Trash2, Send, BrainCircuit, User, PanelLeft } from "lucide-react";
+import { Plus, MessageSquare, Trash2, Send, BrainCircuit, User, PanelLeft, AlertTriangle } from "lucide-react";
 import { showError, showSuccess } from "@/utils/toast";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -138,7 +138,22 @@ const ArtTutorPage: React.FC = () => {
       if (context?.previousMessages) {
         queryClient.setQueryData(context.queryKey, context.previousMessages);
       }
-      showError(err.message);
+      
+      const queryKey = ["chatMessages", activeSessionId];
+      const errorMessage = {
+        id: `error-${Date.now()}`,
+        role: 'model',
+        content: `⚠️ **Ocorreu um Erro**\n\n${err.message}`,
+        created_at: new Date().toISOString(),
+        isError: true,
+      };
+
+      queryClient.setQueryData(queryKey, (old: any[] | undefined) => {
+          const currentMessages = old || [];
+          return [...currentMessages, errorMessage];
+      });
+
+      showError("Ocorreu um erro ao se comunicar com a IA. Veja os detalhes na conversa.");
     },
     onSuccess: (data) => {
       if (!activeSessionId) {
@@ -212,9 +227,16 @@ const ArtTutorPage: React.FC = () => {
           <div className="space-y-6">
             {messages?.map((message: any) => (
               <div key={message.id} className={`flex items-start gap-3 ${message.role === 'user' ? 'justify-end' : ''}`}>
-                {message.role === 'model' && <BrainCircuit className="h-8 w-8 text-teal-500 flex-shrink-0 mt-1" />}
+                {message.role === 'model' && (
+                  message.isError 
+                  ? <AlertTriangle className="h-8 w-8 text-red-500 flex-shrink-0 mt-1" />
+                  : <BrainCircuit className="h-8 w-8 text-teal-500 flex-shrink-0 mt-1" />
+                )}
                 <div className={`flex flex-col ${message.role === 'user' ? 'items-end' : 'items-start'}`}>
-                  <div className={`max-w-md p-3 rounded-lg ${message.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-muted rounded-bl-none'}`}>
+                  <div className={`max-w-md p-3 rounded-lg ${
+                    message.isError ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700/30 text-red-900 dark:text-red-200' :
+                    message.role === 'user' ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-muted rounded-bl-none'
+                  }`}>
                     <p className="whitespace-pre-wrap">{message.content}</p>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
