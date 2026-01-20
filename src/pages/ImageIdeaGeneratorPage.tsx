@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Lightbulb, Sparkles, History, Trash2, Image as ImageIcon, Download, Copy } from "lucide-react";
 import { showSuccess, showError } from "@/utils/toast";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 // Form Schema
 const ideaSchema = z.object({
@@ -80,10 +81,8 @@ const ImageIdeaGeneratorPage: React.FC = () => {
 
   const generateMutation = useMutation({
     mutationFn: async (values: IdeaFormValues) => {
-      // Step 1: Generate the text prompt
       const generatePrompt = (data: IdeaFormValues): string => {
         const systemPart = ideaSystemPrompt || "Crie um prompt de imagem detalhado para um gerador de IA como Midjourney ou DALL-E, baseado nas seguintes especificações. O prompt deve ser em inglês para melhor compatibilidade, mas use as palavras-chave fornecidas.";
-
         const promptParts = [
           data.descricao_principal,
           data.tema && `O tema é ${data.tema}.`,
@@ -100,46 +99,42 @@ const ImageIdeaGeneratorPage: React.FC = () => {
           data.qualidade_render && `A qualidade da imagem deve ser ${data.qualidade_render}.`,
           data.finalidade && `A finalidade da imagem é para ${data.finalidade}.`,
         ].filter(Boolean).join(' ');
-
         const technicalDetails = [
           data.formato_imagem && `--ar ${data.formato_imagem.replace(':', ' ')}`,
           data.resolucao && `--res ${data.resolucao}`,
         ].filter(Boolean).join(' ');
-
         const negativePrompt = data.prompt_negativo ? ` --no ${data.prompt_negativo}` : '';
-
         const userPrompt = `${promptParts} ${technicalDetails}`.trim();
-
         return `${systemPart}\n\n--- PROMPT DO USUÁRIO ---\n${userPrompt}${negativePrompt}`;
       };
       const prompt_final = generatePrompt(values);
 
-      // Step 2: Save the initial idea to get an ID and set status to PENDING
       const initialIdea = await createImageIdea({ 
         ...values, 
         prompt_final,
         status: 'PENDING',
       });
 
-      // Step 3: Create a search query for the reference image
-      const searchQuery = [
-        values.descricao_principal,
-        values.tema,
-        values.estilo_artistico,
-        values.ambiente,
-        values.atmosfera,
-      ].filter(Boolean).join(' ');
+      try {
+        const searchQuery = [
+          values.descricao_principal,
+          values.tema,
+          values.estilo_artistico,
+          values.ambiente,
+          values.atmosfera,
+        ].filter(Boolean).join(' ');
 
-      // Step 4: Call the edge function to find a reference image
-      const { imageUrl } = await findReferenceImage(searchQuery);
+        const { imageUrl } = await findReferenceImage(searchQuery);
 
-      // Step 5: Update the idea with the image URL and set status to GERADO
-      const updatedIdea = await updateImageIdea(initialIdea.id, {
-        imagem_url: imageUrl,
-        status: 'GERADO',
-      });
-
-      return updatedIdea;
+        const updatedIdea = await updateImageIdea(initialIdea.id, {
+          imagem_url: imageUrl,
+          status: 'GERADO',
+        });
+        return updatedIdea;
+      } catch (error) {
+        await updateImageIdea(initialIdea.id, { status: 'ERROR' });
+        throw error;
+      }
     },
     onSuccess: (data) => {
       showSuccess("Ideia e imagem de referência geradas com sucesso!");
@@ -149,6 +144,7 @@ const ImageIdeaGeneratorPage: React.FC = () => {
     },
     onError: (error) => {
       showError(`Erro ao gerar ideia: ${error.message}`);
+      queryClient.invalidateQueries({ queryKey: ["imageIdeas"] });
     },
   });
 
@@ -171,7 +167,6 @@ const ImageIdeaGeneratorPage: React.FC = () => {
   const handleDownload = async () => {
     if (!activeIdea?.imagem_url) return;
     try {
-      // Pexels URLs often need to be fetched via a proxy or directly if CORS allows
       const response = await fetch(activeIdea.imagem_url);
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -339,7 +334,17 @@ const ImageIdeaGeneratorPage: React.FC = () => {
                   history?.map((idea: any) => (
                     <div key={idea.id} onClick={() => setActiveIdea(idea)} className={cn("group flex items-center gap-4 p-2 border-b cursor-pointer hover:bg-muted/50", { "bg-muted": activeIdea?.id === idea.id })}>
                       <img src={idea.imagem_url || 'https://via.placeholder.com/64'} alt={idea.titulo} className="h-16 w-16 object-cover rounded-md" />
-                      <div className="flex-grow"><p className="font-semibold">{idea.titulo}</p><p className="text-sm text-muted-foreground">{new Date(idea.criado_em).toLocaleDateString()}</p></div>
+                      <div className="flex-grow">
+                        <p className="font-semibold">{idea.titulo}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm text-muted-foreground">{new Date(idea.criado_em).toLocaleDateString()}</p>
+                          <Badge variant={
+                            idea.status === 'GERADO' ? 'default' :
+                            idea.status === 'ERROR' ? 'destructive' :
+                            'secondary'
+                          }>{idea.status}</Badge>
+                        </div>
+                      </div>
                       <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100" onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(idea.id); }}><Trash2 className="h-4 w-4 text-red-500" /></Button>
                     </div>
                   ))
