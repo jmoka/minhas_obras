@@ -126,7 +126,7 @@ serve(async (req) => {
     const errorString = JSON.stringify(error).toLowerCase();
 
     if (errorString.includes("429") || errorString.includes("too many requests")) {
-      errorMessage = "Você atingiu o limite de requisições da API do Gemini (plano gratuito). Por favor, aguarde um minuto e tente novamente.";
+      errorMessage = "Você ultrapassou os limites de uso (quota) da API Gemini no plano Free Tier. Este erro não é da plataforma, mas um limite da sua chave de API do Google.\n\nSugestões:\n1. Aguarde alguns minutos e tente novamente.\n2. Nas Configurações de Admin, troque para um modelo mais leve, como 'gemini-1.5-flash'.\n3. Considere migrar para um plano pago do Google AI para remover essas limitações.";
       statusCode = 429;
     } else if (errorMessage.includes("API key not valid")) {
       errorMessage = "Sua chave de API do Gemini não é válida. Verifique-a em 'Configurações de API'.";
